@@ -1,0 +1,8 @@
+__pycache__/
+build/
+qplacer/operators/
+qplacer/results/
+qplacer/test/
+qplacer/logs/
+qplacer/benchmarks/
+thirdparty/
