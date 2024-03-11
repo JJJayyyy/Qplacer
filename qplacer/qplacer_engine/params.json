@@ -1,0 +1,129 @@
+{
+"lef_input" : {
+    "description" : "input LEF file", 
+    "default" : "", 
+    "required" : "required for LEF/DEF"
+    },
+"def_input" : {
+    "description" : "input DEF file", 
+    "default" : "", 
+    "required" : "required for LEF/DEF"
+    },
+"gpu" : {
+    "description" : "enable gpu or not", 
+    "default" : 1
+    },
+"num_bins_x" : {
+    "description" : "number of bins in horizontal direction; computed by internal heuristic if not specified", 
+    "default" : 0
+    },
+"num_bins_y" : {
+    "description" : "number of bins in vertical direction; computed by internal heuristic if not specified", 
+    "default" : 0
+    },
+"global_place_stages" : {
+    "description" : "global placement configurations of each stage, a dictionary of {\"num_bins_x\", \"num_bins_y\", \"iteration\", \"learning_rate\", \"learning_rate_decay\", \"wirelength\", \"optimizer\", \"Llambda_density_weight_iteration\", \"Lsub_iteration\"}", 
+    "default" : [{"num_bins_x" : 0, "num_bins_y" : 0, "iteration" : 1000, "learning_rate" : 0.01, "wirelength" : "weighted_average", "optimizer" : "nesterov", "Llambda_density_weight_iteration" : 1, "Lsub_iteration" : 1}], 
+    "required" : "required"
+    },
+"target_density" : {
+    "description" : "target density", 
+    "default" : 0.8
+    },
+"density_weight" : {
+    "description" : "initial weight of density cost", 
+    "default" : 8e-5
+    },
+"random_seed" : {
+    "description" : "random seed", 
+    "default" : 1000
+    },
+"result_dir" : {
+    "description" : "result directory for output", 
+    "default" : "results"
+    },
+"scale_factor" : {
+    "description" : "scale factor to avoid numerical overflow; 0.0 means not set", 
+    "default" : 0.0
+    },
+"shift_factor" : {
+    "description" : "shift factor to avoid numerical issues when the lower-left origin of rows is not (0, 0);", 
+    "default" : [0.0, 0.0]
+    },
+"ignore_net_degree" : {
+    "description" : "ignore net degree larger than some value", 
+    "default" : 100
+    },
+"gp_noise_ratio" : {
+    "description" : "noise to initial positions for global placement", 
+    "default" : 0.025
+    },
+"enable_fillers" : {
+    "description" : "enable filler cells", 
+    "default" : 1
+    },
+"global_place_flag" : {
+    "description" : "whether use global placement", 
+    "default" : 1
+    },
+"legalize_flag" : {
+    "description" : "whether use internal legalization", 
+    "default" : 1
+    },
+"stop_overflow" : {
+    "description" : "stopping criteria, consider stop when the overflow reaches to a ratio", 
+    "default" : 0.1
+    },
+"dtype" : {
+    "description" : "data type, float32 | float64", 
+    "default" : "float32"
+    },
+"plot_flag" : {
+    "description" : "whether plot solution or not", 
+    "default" : 0
+    },
+"RePlAce_ref_hpwl" : {
+    "description" : "reference HPWL used in RePlAce for updating density weight", 
+    "default" : 350000
+    },
+"RePlAce_LOWER_PCOF" : {
+    "description" : "lower bound ratio used in RePlAce for updating density weight", 
+    "default" : 0.95
+    },
+"RePlAce_UPPER_PCOF" : {
+    "description" : "upper bound ratio used in RePlAce for updating density weight", 
+    "default" : 1.05
+    },
+"gamma" : {
+    "description" : "base coefficient for log-sum-exp and weighted-average wirelength, a relative value to bin size",
+    "default" : 4.0
+    },
+"RePlAce_skip_energy_flag" : {
+    "description" : "whether skip density energy computation for fast mode, may not work with some solvers", 
+    "default" : 0
+    },
+"random_center_init_flag" : {
+    "description" : "whether perform random initialization around the center for global placement", 
+    "default" : 1
+    },
+"sort_nets_by_degree" : {
+    "description" : "whether sort nets by degree or not", 
+    "default" : 0
+    },
+"num_threads" : {
+    "description" : "number of CPU threads", 
+    "default" : 8
+    },
+"dump_global_place_solution_flag" : {
+    "description" : "whether dump intermediate global placement solution as a compressed pickle object", 
+    "default" : 1
+    },
+"dump_legalize_solution_flag" : {
+    "description" : "whether dump intermediate legalization solution as a compressed pickle object", 
+    "default" : 1
+    },
+"deterministic_flag" : {
+    "description" : "whether require run-to-run determinism, may have efficiency overhead", 
+    "default" : 0
+    }
+}
