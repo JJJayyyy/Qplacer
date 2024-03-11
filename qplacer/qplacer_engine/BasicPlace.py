@@ -1,0 +1,636 @@
+import os
+import sys
+import time
+import gzip
+if sys.version_info[0] < 3:
+    import cPickle as pickle
+else:
+    import _pickle as pickle
+import re
+import numpy as np
+import logging
+import torch
+import torch.nn as nn
+import operators.dreamplace.ops.move_boundary.move_boundary as move_boundary
+import operators.dreamplace.ops.hpwl.hpwl as hpwl
+import operators.dreamplace.ops.pin_pos.pin_pos as pin_pos
+import operators.dreamplace.ops.pin_weight_sum.pin_weight_sum as pws
+import operators.dreamplace.ops.macro_legalize.macro_legalize as macro_legalize
+import operators.dreamplace.ops.abacus_legalize.abacus_legalize as abacus_legalize
+
+import operators.qplacement.ops.legality_check.legality_check as legality_check
+import operators.qplacement.ops.greedy_legalize.greedy_legalize as greedy_legalize
+import operators.qplacement.ops.draw_place.draw_place as draw_place
+
+
+class PlaceDataCollection(object):
+    """
+    @brief A wraper for all data tensors on device for building ops
+    """
+    def __init__(self, pos, params, placedb, device):
+        """
+        @brief initialization
+        @param pos locations of cells
+        @param params parameters
+        @param placedb placement database
+        @param device cpu or cuda
+        """
+        self.device = device
+        torch.set_num_threads(params.num_threads)
+        # position should be parameter
+        self.pos = pos
+
+        with torch.no_grad():
+            # other tensors required to build ops
+
+            self.node_size_x = torch.from_numpy(placedb.node_size_x).to(device)
+            self.node_size_y = torch.from_numpy(placedb.node_size_y).to(device)
+            # original node size for legalization, since they will be adjusted in global placement
+            #     self.original_node_size_x = self.node_size_x.clone()
+            #     self.original_node_size_y = self.node_size_y.clone()
+
+            self.pin_offset_x = torch.tensor(placedb.pin_offset_x,
+                                             dtype=self.pos[0].dtype,
+                                             device=device)
+            self.pin_offset_y = torch.tensor(placedb.pin_offset_y,
+                                             dtype=self.pos[0].dtype,
+                                             device=device)
+            # original pin offset for legalization, since they will be adjusted in global placement
+            #     self.original_pin_offset_x = self.pin_offset_x.clone()
+            #     self.original_pin_offset_y = self.pin_offset_y.clone()
+
+            self.target_density = torch.empty(1, dtype=self.pos[0].dtype, device=device)
+            self.target_density.data.fill_(params.target_density)
+
+            # detect movable macros and scale down the density to avoid halos
+            # I use a heuristic that cells whose areas are 10x of the mean area will be regarded movable macros in global placement
+            self.node_areas = self.node_size_x * self.node_size_y
+            if self.target_density < 1:
+                mean_area = self.node_areas[:placedb.num_movable_nodes].mean().mul_(10)
+                row_height = self.node_size_y[:placedb.num_movable_nodes].min().mul_(2)
+                self.movable_macro_mask = (self.node_areas[:placedb.num_movable_nodes] > mean_area
+                ) & (self.node_size_y[:placedb.num_movable_nodes] > row_height)
+            else:  # no movable macros
+                self.movable_macro_mask = None
+
+            self.pin2node_map = torch.from_numpy(placedb.pin2node_map).to(device)
+            self.flat_node2pin_map = torch.from_numpy(placedb.flat_node2pin_map).to(device)
+            self.flat_node2pin_start_map = torch.from_numpy(placedb.flat_node2pin_start_map).to(device)
+            # number of pins for each cell
+            self.pin_weights = (self.flat_node2pin_start_map[1:] -
+                                self.flat_node2pin_start_map[:-1]).to(self.node_size_x.dtype)
+
+            self.pin2net_map = torch.from_numpy(placedb.pin2net_map).to(device)
+            self.flat_net2pin_map = torch.from_numpy(placedb.flat_net2pin_map).to(device)
+            self.flat_net2pin_start_map = torch.from_numpy(placedb.flat_net2pin_start_map).to(device)
+            self.net_weights = torch.from_numpy(placedb.net_weights).to(device)
+
+            # regions
+            self.flat_region_boxes = torch.from_numpy(placedb.flat_region_boxes).to(device)
+            self.flat_region_boxes_start = torch.from_numpy(placedb.flat_region_boxes_start).to(device)
+            self.node2fence_region_map = torch.from_numpy(placedb.node2fence_region_map).to(device)
+
+            self.net_mask_all = torch.from_numpy(np.ones(placedb.num_nets, dtype=np.uint8)).to(device)  # all nets included
+            net_degrees = np.array([len(net2pin) for net2pin in placedb.net2pin_map])
+            net_mask = np.logical_and(2 <= net_degrees, net_degrees < params.ignore_net_degree).astype(np.uint8)
+            self.net_mask_ignore_large_degrees = torch.from_numpy(net_mask).to(device)  # nets with large degrees are ignored
+
+            # number of pins for each node
+            num_pins_in_nodes = np.zeros(placedb.num_nodes)
+            for i in range(placedb.num_physical_nodes):
+                num_pins_in_nodes[i] = len(placedb.node2pin_map[i])
+            self.num_pins_in_nodes = torch.tensor(num_pins_in_nodes, dtype=self.pos[0].dtype, device=device)
+
+            # sum of pin weights for each node.
+            sum_pin_weights_in_nodes = np.zeros(placedb.num_nodes)
+            self.sum_pin_weights_in_nodes = \
+                torch.tensor(sum_pin_weights_in_nodes, dtype=self.net_weights.dtype, device="cpu")
+
+            # avoid computing gradient for fixed macros
+            # 1 is for fixed macros
+            self.pin_mask_ignore_fixed_macros = (self.pin2node_map >= placedb.num_movable_nodes)
+
+            # sort nodes by size, return their sorted indices, designed for memory coalesce in electrical force
+            movable_size_x = self.node_size_x[:placedb.num_movable_nodes]
+            _, self.sorted_node_map = torch.sort(movable_size_x)
+            self.sorted_node_map = self.sorted_node_map.to(torch.int32)
+            # logging.debug(self.node_size_x[placedb.num_movable_nodes//2 :placedb.num_movable_nodes//2+20])
+            # logging.debug(self.sorted_node_map[placedb.num_movable_nodes//2 :placedb.num_movable_nodes//2+20])
+            # logging.debug(self.node_size_x[self.sorted_node_map[0: 10].long()])
+            # logging.debug(self.node_size_x[self.sorted_node_map[-10:].long()])
+
+    def bin_center_x_padded(self, placedb, padding, num_bins_x):
+        """
+        @brief compute array of bin center horizontal coordinates with padding
+        @param placedb placement database
+        @param padding number of bins padding to boundary of placement region
+        """
+        bin_size_x = (placedb.xh - placedb.xl) / num_bins_x
+        xl = placedb.xl - padding * bin_size_x
+        xh = placedb.xh + padding * bin_size_x
+        bin_center_x = torch.from_numpy(placedb.bin_centers(xl, xh, bin_size_x)).to(self.device)
+        return bin_center_x
+
+    def bin_center_y_padded(self, placedb, padding, num_bins_y):
+        """
+        @brief compute array of bin center vertical coordinates with padding
+        @param placedb placement database
+        @param padding number of bins padding to boundary of placement region
+        """
+        bin_size_y = (placedb.yh - placedb.yl) / num_bins_y
+        yl = placedb.yl - padding * bin_size_y
+        yh = placedb.yh + padding * bin_size_y
+        bin_center_y = torch.from_numpy(placedb.bin_centers(yl, yh, bin_size_y)).to(self.device)
+        return bin_center_y
+
+
+class PlaceOpCollection(object):
+    """
+    @brief A wrapper for all ops
+    """
+    def __init__(self):
+        """
+        @brief initialization
+        """
+        self.pin_pos_op = None
+        self.move_boundary_op = None
+        self.hpwl_op = None
+        self.rmst_wl_op = None
+        self.density_overflow_op = None
+        self.legality_check_op = None
+        self.legalize_op = None
+        self.wirelength_op = None
+        self.update_gamma_op = None
+        self.density_op = None
+        self.precondition_op = None
+        self.noise_op = None
+        self.draw_place_op = None
+        self.pin_utilization_map_op = None
+        self.nctugr_congestion_map_op = None
+        self.adjust_node_area_op = None
+
+
+class BasicPlace(nn.Module):
+    """
+    @brief Base placement class.
+    All placement engines should be derived from this class.
+    """
+    def __init__(self, params, placedb, timer):
+        """
+        @brief initialization
+        @param params parameter
+        @param placedb placement database
+        @param timer the timing analysis engine
+        """
+        torch.manual_seed(params.random_seed)
+        super(BasicPlace, self).__init__()
+
+        tt = time.time()
+        self.init_pos = np.zeros(placedb.num_nodes * 2, dtype=placedb.dtype)
+        # x position
+        self.init_pos[0:placedb.num_physical_nodes] = placedb.node_x
+        if params.global_place_flag and params.random_center_init_flag:  # move to center of layout
+            logging.info("move cells to the center of layout with random noise")
+            self.init_pos[0:placedb.num_movable_nodes] = np.random.normal(
+                loc=(placedb.xl * 1.0 + placedb.xh * 1.0) / 2,
+                scale=(placedb.xh - placedb.xl) * 0.001,
+                size=placedb.num_movable_nodes)
+
+        # y position
+        self.init_pos[placedb.num_nodes:placedb.num_nodes+placedb.num_physical_nodes] = placedb.node_y
+        if params.global_place_flag and params.random_center_init_flag:  # move to center of layout
+            self.init_pos[placedb.num_nodes:placedb.num_nodes + placedb.num_movable_nodes] = np.random.normal(
+                              loc=(placedb.yl * 1.0 + placedb.yh * 1.0) / 2,
+                              scale=(placedb.yh - placedb.yl) * 0.001,
+                              size=placedb.num_movable_nodes)
+
+        if placedb.num_filler_nodes:  # uniformly distribute filler cells in the layout
+            self.init_pos[placedb.num_physical_nodes : placedb.num_nodes] = np.random.uniform(
+                low=placedb.xl,
+                high=placedb.xh - placedb.node_size_x[-placedb.num_filler_nodes],
+                size=placedb.num_filler_nodes)
+            self.init_pos[placedb.num_nodes + placedb.num_physical_nodes : placedb.num_nodes * 2] = \
+                np.random.uniform(low=placedb.yl, 
+                                  high=placedb.yh - placedb.node_size_y[-placedb.num_filler_nodes],
+                                 size=placedb.num_filler_nodes)
+
+        logging.debug("prepare init_pos takes %.2f seconds" % (time.time() - tt))
+        self.device = torch.device("cuda" if params.gpu else "cpu")
+
+        tt = time.time()
+        self.pos = nn.ParameterList([nn.Parameter(torch.from_numpy(self.init_pos).to(self.device))])
+        logging.debug("build pos takes %.2f seconds" % (time.time() - tt))
+
+        tt = time.time()
+        self.data_collections = PlaceDataCollection(self.pos, params, placedb, self.device)
+        logging.debug("build data_collections takes %.2f seconds" % (time.time() - tt))
+
+        tt = time.time()
+        self.op_collections = PlaceOpCollection()
+        logging.debug("build op_collections takes %.2f seconds" % (time.time() - tt))
+
+        tt = time.time()
+        # position to pin position
+        self.op_collections.pin_pos_op = self.build_pin_pos(
+            params, placedb, self.data_collections, self.device)
+        # bound nodes to layout region
+        self.op_collections.move_boundary_op = self.build_move_boundary(
+            params, placedb, self.data_collections, self.device)
+        # hpwl and density overflow ops for evaluation
+        self.op_collections.hpwl_op = self.build_hpwl(
+            params, placedb, self.data_collections,
+            self.op_collections.pin_pos_op, self.device)
+        self.op_collections.pws_op = self.build_pws(placedb, self.data_collections)
+        # legality check
+        self.op_collections.legality_check_op = self.build_legality_check(
+            params, placedb, self.data_collections, self.device)
+        # legalization
+        self.op_collections.legalize_op = self.build_legalization(
+            params, placedb, self.data_collections, self.device)
+        # draw placement
+        self.op_collections.draw_place_op = self.build_draw_placement(params, placedb)
+        # flag for rmst_wl_op # can only read once
+        self.read_lut_flag = True
+
+        logging.debug("build BasicPlace ops takes %.2f seconds" %(time.time() - tt))
+
+
+    def __call__(self, params, placedb):
+        """
+        @brief Solve placement.
+        placeholder for derived classes.
+        @param params parameters
+        @param placedb placement database
+        """
+        pass
+
+
+    def build_pin_pos(self, params, placedb, data_collections, device):
+        """
+        @brief sum up the pins for each cell
+        @param params parameters
+        @param placedb placement database
+        @param data_collections a collection of all data and variables required for constructing the ops
+        @param device cpu or cuda
+        """
+        return pin_pos.PinPos(
+            pin_offset_x=data_collections.pin_offset_x,
+            pin_offset_y=data_collections.pin_offset_y,
+            pin2node_map=data_collections.pin2node_map,
+            flat_node2pin_map=data_collections.flat_node2pin_map,
+            flat_node2pin_start_map=data_collections.flat_node2pin_start_map,
+            num_physical_nodes=placedb.num_physical_nodes,
+            algorithm="node-by-node")
+
+
+    def build_move_boundary(self, params, placedb, data_collections, device):
+        """
+        @brief bound nodes into layout region
+        @param params parameters
+        @param placedb placement database
+        @param data_collections a collection of all data and variables required for constructing the ops
+        @param device cpu or cuda
+        """
+        return move_boundary.MoveBoundary(
+            data_collections.node_size_x,
+            data_collections.node_size_y,
+            xl=placedb.xl,
+            yl=placedb.yl,
+            xh=placedb.xh,
+            yh=placedb.yh,
+            num_movable_nodes=placedb.num_movable_nodes,
+            num_filler_nodes=placedb.num_filler_nodes)
+
+
+    def build_hpwl(self, params, placedb, data_collections, pin_pos_op, device):
+        """
+        @brief compute half-perimeter wirelength
+        @param params parameters
+        @param placedb placement database
+        @param data_collections a collection of all data and variables required for constructing the ops
+        @param pin_pos_op the op to compute pin locations according to cell locations
+        @param device cpu or cuda
+        """
+        wirelength_for_pin_op = hpwl.HPWL(
+            flat_netpin=data_collections.flat_net2pin_map,
+            netpin_start=data_collections.flat_net2pin_start_map,
+            pin2net_map=data_collections.pin2net_map,
+            net_weights=data_collections.net_weights,
+            net_mask=data_collections.net_mask_all,
+            algorithm='net-by-net')
+        # wirelength for position
+        def build_wirelength_op(pos):
+            return wirelength_for_pin_op(pin_pos_op(pos))
+
+        return build_wirelength_op
+    
+
+    def build_pws(self, placedb, data_collections):
+        """
+        @brief accumulate pin weights of a node
+        @param placedb placement database
+        @param data_collections a collection of all data and variables required for constructing the ops
+        """
+        # CPU version by default...
+        pws_op = pws.PinWeightSum(
+            flat_nodepin=data_collections.flat_node2pin_map.cpu(),
+            nodepin_start=data_collections.flat_node2pin_start_map.cpu(),
+            pin2net_map=data_collections.pin2net_map.cpu(),
+            num_nodes=placedb.num_nodes,
+            algorithm='node-by-node')
+        return pws_op
+
+
+    def build_rmst_wl(self, params, placedb, pin_pos_op, device):
+        """
+        @brief compute rectilinear minimum spanning tree wirelength with flute
+        @param params parameters
+        @param placedb placement database
+        @param pin_pos_op the op to compute pin locations according to cell locations
+        @param device cpu or cuda
+        """
+        # wirelength cost
+
+        POWVFILE = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                         "../../thirdparty/NCTUgr.ICCAD2012/POWV9.dat"))
+        POSTFILE = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                         "../../thirdparty/NCTUgr.ICCAD2012/POST9.dat"))
+        logging.info("POWVFILE = %s" % (POWVFILE))
+        logging.info("POSTFILE = %s" % (POSTFILE))
+        wirelength_for_pin_op = rmst_wl.RMSTWL(
+            flat_netpin=torch.from_numpy(placedb.flat_net2pin_map).to(device),
+            netpin_start=torch.from_numpy(placedb.flat_net2pin_start_map).to(device),
+            ignore_net_degree=params.ignore_net_degree,
+            POWVFILE=POWVFILE,
+            POSTFILE=POSTFILE)
+
+        # wirelength for position
+        def build_wirelength_op(pos):
+            pin_pos = pin_pos_op(pos)
+            wls = wirelength_for_pin_op(pin_pos.clone().cpu(), self.read_lut_flag)
+            self.read_lut_flag = False
+            return wls
+
+        return build_wirelength_op
+    
+
+    def build_legality_check(self, params, placedb, data_collections, device):
+        """
+        @brief legality check
+        @param params parameters
+        @param placedb placement database
+        @param data_collections a collection of all data and variables required for constructing the ops
+        @param device cpu or cuda
+        """
+        return legality_check.LegalityCheck(
+            node_size_x=data_collections.node_size_x,
+            node_size_y=data_collections.node_size_y,
+            flat_region_boxes=data_collections.flat_region_boxes,
+            flat_region_boxes_start=data_collections.flat_region_boxes_start,
+            node2fence_region_map=data_collections.node2fence_region_map,
+            xl=placedb.xl,
+            yl=placedb.yl,
+            xh=placedb.xh,
+            yh=placedb.yh,
+            site_width=placedb.site_width,
+            row_height=placedb.row_height,
+            scale_factor=params.scale_factor,
+            num_terminals=placedb.num_terminals,
+            num_movable_nodes=placedb.num_movable_nodes)
+
+
+    def build_legalization(self, params, placedb, data_collections, device):
+        """
+        @brief legalization
+        @param params parameters
+        @param placedb placement database
+        @param data_collections a collection of all data and variables required for constructing the ops
+        @param device cpu or cuda
+        """
+        # for movable macro legalization
+        # the number of bins control the search granularity
+        ml = macro_legalize.MacroLegalize(
+            node_size_x=data_collections.node_size_x,
+            node_size_y=data_collections.node_size_y,
+            node_weights=data_collections.num_pins_in_nodes,
+            flat_region_boxes=data_collections.flat_region_boxes,
+            flat_region_boxes_start=data_collections.flat_region_boxes_start,
+            node2fence_region_map=data_collections.node2fence_region_map,
+            xl=placedb.xl,
+            yl=placedb.yl,
+            xh=placedb.xh,
+            yh=placedb.yh,
+            site_width=placedb.site_width,
+            row_height=placedb.row_height,
+            num_bins_x=placedb.num_bins_x,
+            num_bins_y=placedb.num_bins_y,
+            num_movable_nodes=placedb.num_movable_nodes,
+            num_terminal_NIs=placedb.num_terminal_NIs,
+            num_filler_nodes=placedb.num_filler_nodes)
+        # for standard cell legalization
+        # legalize_alg = mg_legalize.MGLegalize
+        legalize_alg = greedy_legalize.GreedyLegalize
+        gl = legalize_alg(
+            node_size_x=data_collections.node_size_x,
+            node_size_y=data_collections.node_size_y,
+            node_weights=data_collections.num_pins_in_nodes,
+            flat_region_boxes=data_collections.flat_region_boxes,
+            flat_region_boxes_start=data_collections.flat_region_boxes_start,
+            node2fence_region_map=data_collections.node2fence_region_map,
+            xl=placedb.xl,
+            yl=placedb.yl,
+            xh=placedb.xh,
+            yh=placedb.yh,
+            site_width=placedb.site_width,
+            row_height=placedb.row_height,
+            num_bins_x=1,
+            num_bins_y=64,
+            #num_bins_x=64, num_bins_y=64,
+            num_movable_nodes=placedb.num_movable_nodes,
+            num_terminal_NIs=placedb.num_terminal_NIs,
+            num_filler_nodes=placedb.num_filler_nodes,
+            node_in_group=placedb.node_in_group,
+            )
+        # for standard cell legalization
+        al = abacus_legalize.AbacusLegalize(
+            node_size_x=data_collections.node_size_x,
+            node_size_y=data_collections.node_size_y,
+            node_weights=data_collections.num_pins_in_nodes,
+            flat_region_boxes=data_collections.flat_region_boxes,
+            flat_region_boxes_start=data_collections.flat_region_boxes_start,
+            node2fence_region_map=data_collections.node2fence_region_map,
+            xl=placedb.xl,
+            yl=placedb.yl,
+            xh=placedb.xh,
+            yh=placedb.yh,
+            site_width=placedb.site_width,
+            row_height=placedb.row_height,
+            num_bins_x=1,
+            num_bins_y=64,
+            #num_bins_x=64, num_bins_y=64,
+            num_movable_nodes=placedb.num_movable_nodes,
+            num_terminal_NIs=placedb.num_terminal_NIs,
+            num_filler_nodes=placedb.num_filler_nodes)
+
+        def build_legalization_op(pos):
+            logging.info("---------- Macro legalization  ----------")
+            pos_clone = pos.clone().detach()
+            pos1 = ml(pos, pos)
+            pos1_clone = pos1.clone().detach()
+            num_diff_pos_01 = torch.count_nonzero(pos_clone - pos1_clone)
+            logging.info(f"Number of moved node (Macro legalization) : {num_diff_pos_01}")
+            self.plot_legalization(params, "Macro", pos1.data.clone().cpu().numpy())
+            
+            logging.info("---------- Greedy legalization  ----------")
+            pos2 = gl(pos1, pos1)
+            pos2_clone = pos2.clone().detach()
+            num_diff_pos12 = torch.count_nonzero(pos1_clone - pos2_clone)
+            logging.info(f"Number of moved node (Greedy legalization) : {num_diff_pos12}")
+            self.plot_legalization(params, "Greedy", pos2.data.clone().cpu().numpy())
+
+            legal = self.op_collections.legality_check_op(pos2)
+            if not legal:
+                logging.error("legality check failed in greedy legalization, " \
+                    "return illegal results after greedy legalization.")
+                return pos2
+            return pos2
+            
+            # pos3 = al(pos1, pos2)
+            # pos3_clone = pos3.clone().detach()
+            # num_diff_pos23 = torch.count_nonzero(pos2_clone - pos3_clone)
+            # logging.info(f"Number of moved node (Abacus legalization) : {num_diff_pos23}")
+            # print("-----------------------------------------------")
+
+            # legal = self.op_collections.legality_check_op(pos3)
+            # if not legal:
+            #     logging.error("legality check failed in abacus legalization, " \
+            #         "return legal results after greedy legalization.")
+            #     return pos2            
+            # return pos3
+        
+        return build_legalization_op
+
+
+    def build_draw_placement(self, params, placedb):
+        """
+        @brief plot placement
+        @param params parameters
+        @param placedb placement database
+        """
+        return draw_place.DrawPlace(placedb)
+
+
+    def validate(self, placedb, pos, iteration):
+        """
+        @brief validate placement
+        @param placedb placement database
+        @param pos locations of cells
+        @param iteration optimization step
+        """
+        pos = torch.from_numpy(pos).to(self.device)
+        hpwl = self.op_collections.hpwl_op(pos)
+        overflow, max_density = self.op_collections.density_overflow_op(pos)
+        return hpwl, overflow, max_density
+
+
+    def plot(self, params, placedb, iteration, pos):
+        """
+        @brief plot layout
+        @param params parameters
+        @param placedb placement database
+        @param iteration optimization step
+        @param pos locations of cells
+        """
+        tt = time.time()
+        path = "%s/%s" % (params.result_dir, params.design_name())
+        figname = "%s/plot/iter%s.png" % (path, '{:04}'.format(iteration))
+        os.system("mkdir -p %s" % (os.path.dirname(figname)))
+        if isinstance(pos, np.ndarray):
+            pos = torch.from_numpy(pos)
+        self.op_collections.draw_place_op(pos, figname)
+        logging.info("plotting to %s takes %.3f seconds" % (figname, time.time() - tt))
+
+
+    def plot_legalization(self, params, name, pos):
+        """
+        @brief plot layout
+        @param params parameters
+        @param placedb placement database
+        @param iteration optimization step
+        @param pos locations of cells
+        """
+        tt = time.time()
+        path = "%s/%s" % (params.result_dir, params.design_name())
+        figname = "%s/plot/iter_%s.png" % (path, name)
+        os.system("mkdir -p %s" % (os.path.dirname(figname)))
+        if isinstance(pos, np.ndarray):
+            pos = torch.from_numpy(pos)
+        self.op_collections.draw_place_op(pos, figname)
+        logging.info("plotting to %s takes %.3f seconds" % (figname, time.time() - tt))
+
+
+    def dump(self, params, placedb, pos, filename):
+        """
+        @brief dump intermediate solution as compressed pickle file (.pklz)
+        @param params parameters
+        @param placedb placement database
+        @param iteration optimization step
+        @param pos locations of cells
+        @param filename output file name
+        """
+        with gzip.open(filename, "wb") as f:
+            pickle.dump(
+                (self.data_collections.node_size_x.cpu(),
+                 self.data_collections.node_size_y.cpu(),
+                 self.data_collections.flat_net2pin_map.cpu(),
+                 self.data_collections.flat_net2pin_start_map.cpu(),
+                 self.data_collections.pin2net_map.cpu(),
+                 self.data_collections.flat_node2pin_map.cpu(),
+                 self.data_collections.flat_node2pin_start_map.cpu(),
+                 self.data_collections.pin2node_map.cpu(),
+                 self.data_collections.pin_offset_x.cpu(),
+                 self.data_collections.pin_offset_y.cpu(),
+                 self.data_collections.net_mask_ignore_large_degrees.cpu(),
+                 placedb.xl, placedb.yl, placedb.xh, placedb.yh,
+                 placedb.site_width, placedb.row_height, placedb.num_bins_x,
+                 placedb.num_bins_y, placedb.num_movable_nodes,
+                 placedb.num_terminal_NIs, placedb.num_filler_nodes, pos), f)
+
+
+    def load(self, params, placedb, filename):
+        """
+        @brief dump intermediate solution as compressed pickle file (.pklz)
+        @param params parameters
+        @param placedb placement database
+        @param iteration optimization step
+        @param pos locations of cells
+        @param filename output file name
+        """
+        with gzip.open(filename, "rb") as f:
+            data = pickle.load(f)
+            self.data_collections.node_size_x.data = data[0].data.to(self.device)
+            self.data_collections.node_size_y.data = data[1].data.to(self.device)
+            self.data_collections.flat_net2pin_map.data = data[2].data.to(self.device)
+            self.data_collections.flat_net2pin_start_map.data = data[3].data.to(self.device)
+            self.data_collections.pin2net_map.data = data[4].data.to(self.device)
+            self.data_collections.flat_node2pin_map.data = data[5].data.to(self.device)
+            self.data_collections.flat_node2pin_start_map.data = data[6].data.to(self.device)
+            self.data_collections.pin2node_map.data = data[7].data.to(self.device)
+            self.data_collections.pin_offset_x.data = data[8].data.to(self.device)
+            self.data_collections.pin_offset_y.data = data[9].data.to(self.device)
+            self.data_collections.net_mask_ignore_large_degrees.data = data[10].data.to(self.device)
+            placedb.xl = data[11]
+            placedb.yl = data[12]
+            placedb.xh = data[13]
+            placedb.yh = data[14]
+            placedb.site_width = data[15]
+            placedb.row_height = data[16]
+            placedb.num_bins_x = data[17]
+            placedb.num_bins_y = data[18]
+            num_movable_nodes = data[19]
+            num_nodes = data[0].numel()
+            placedb.num_terminal_NIs = data[20]
+            placedb.num_filler_nodes = data[21]
+            placedb.num_physical_nodes = num_nodes - placedb.num_filler_nodes
+            placedb.num_terminals = placedb.num_physical_nodes - placedb.num_terminal_NIs - num_movable_nodes
+            self.data_collections.pos[0].data = data[22].data.to(self.device)
