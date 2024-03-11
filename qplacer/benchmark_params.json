@@ -1,0 +1,15 @@
+{
+    "scale_factor" : 1000,
+    "q_freq_range" : [4.8, 5.2],
+    "res_freq_range" : [6, 7],
+    "q_th" : 0.1,   
+    "res_th" : 0.1,
+    "partition_size" : 0.2,
+    "qubit_size" : 0.6,
+    "padding_size" : 0.1,
+    "net_weight" : 1.2,
+    "benchmark_dir" : "Qplace_benchmark",
+    "freq_assign" : true, 
+    "partition" : true,
+    "debugging" : true
+}
