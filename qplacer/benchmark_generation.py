@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import warnings
 import logging
+import argparse
 import json
 import sys
 import os
@@ -63,9 +64,9 @@ qubit_num_dict = {
 class BenchmarkGenerator:
     def __init__(self, 
                  bm_json,
-                 postfix='wp_wf'
+                 suffix='wp_wf'
                  ):
-        self.post_fix = postfix
+        self.suffix = suffix
         with open(bm_json, 'r') as json_file:
             self.bm_setting = json.load(json_file)
 
@@ -74,7 +75,7 @@ class BenchmarkGenerator:
             os.makedirs(self.debugging_dir, exist_ok=True)
             logging.info(f"The directory {self.debugging_dir} has been created.")
         
-    def __call__(self, topology, substrate_area):
+    def __call__(self, topology, substrate_area=(10000, 10000)):
         self.params = QplacementParam(substrate_area=substrate_area, 
                                       topology=topology,
                                       scale_factor = self.bm_setting ['scale_factor'],
@@ -128,7 +129,7 @@ class BenchmarkGenerator:
         area_x, area_y = substrate_area[0], substrate_area[1]
         # file_name = f'{topology}_wp' if self.params.partition else topology
         # file_name = f'{file_name}_wf'if self.params.freq_assign else file_name
-        file_name = f'{topology}_{self.post_fix}'
+        file_name = f'{topology}_{self.suffix}'
         benchmark_dir = f"benchmarks/{self.params.benchmark_dir}/{file_name}"
 
         if not os.path.isdir(benchmark_dir):
@@ -138,7 +139,7 @@ class BenchmarkGenerator:
         file_paths = {
             "lef": f"{benchmark_dir}/{file_name}.lef",
             "def": f"{benchmark_dir}/{file_name}.def", 
-            "json_dir": f'{self.params.param_json_dir}/{topology}/{self.post_fix}',
+            "json_dir": f'{self.params.param_json_dir}/{topology}/{self.suffix}',
         }
         self.params.file_paths = file_paths
         self.params.file_name = file_name
@@ -158,21 +159,13 @@ class BenchmarkGenerator:
 
         """ Check Collision """ 
         self.collision_checker.plot_collisions()
-        
 
 
 if __name__ == "__main__":
-    supported = [
-        'grid-25',  
-        # 'grid-64',
-        'falcon', 
-        # 'hummingbird', 
-        # 'eagle',
-        'Aspen-11', 
-        # 'Aspen-M', 
-        # 'xtree-53',
-    ]
-    for t in supported:
-        print("_________________________")
-        g = BenchmarkGenerator('benchmark_params.json', postfix='')
-        g(topology=t, substrate_area=area_dict[t])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--benchmark', default='benchmark_params.json', help='benchmark parameters json file')
+    parser.add_argument('--suffix', default='', help='the suffix for experiment')
+    parser.add_argument('--topology', default='grid-25', help='the connectivity topology of the design')
+    args = parser.parse_args()
+    bmg = BenchmarkGenerator(args.benchmark, suffix=args.suffix)
+    bmg(topology=args.topology, substrate_area=area_dict[args.topology])
