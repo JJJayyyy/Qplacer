@@ -17,3 +17,4 @@ add_subdirectory(DREAMPlace/dreamplace/ops/logsumexp_wirelength)
 add_subdirectory(DREAMPlace/dreamplace/ops/pin_weight_sum)
 add_subdirectory(DREAMPlace/dreamplace/ops/macro_legalize)
 add_subdirectory(DREAMPlace/dreamplace/ops/abacus_legalize)
+
