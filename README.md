@@ -13,4 +13,4 @@ cmake .. -DCMAKE_INSTALL_PREFIX=../qplacer/operators -DPython_EXECUTABLE=$(which
 make
 make install
 ```
-Where `build` is the directory where to compile the code, and `../qplacer/operators` is the directory where to install operators.
+Where `build` is the directory where to compile the code, and `qplacer/operators` is the directory where to install operators.

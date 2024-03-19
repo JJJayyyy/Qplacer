@@ -2,8 +2,15 @@
 
 set -euo pipefail
 CURRENT_DIR=$(pwd)
-cd ../build
-cmake .. -DCMAKE_INSTALL_PREFIX=../qplacer/operators
+
+BUILD_DIR="../build"
+if [ ! -d "$BUILD_DIR" ]; then
+    mkdir -p "$BUILD_DIR"
+fi
+cd "$BUILD_DIR"
+
+cmake .. -DCMAKE_INSTALL_PREFIX=${CURRENT_DIR}/operators
 make
 make install
-cd ../qplacer/
+cd ${CURRENT_DIR}
+# cd ../qplacer/

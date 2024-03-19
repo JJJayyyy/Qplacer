@@ -41,10 +41,6 @@ set(Boost_NO_BOOST_CMAKE TRUE)
 find_package(Boost 1.55.0 REQUIRED)
 message(STATUS "Boost_INCLUDE_DIRS = ${Boost_INCLUDE_DIRS}")
 
-# find_package(Cairo)
-# message(STATUS "Cairo: ${CAIRO_INCLUDE_DIRS}")
-# message(STATUS "Cairo: ${CAIRO_LIBRARIES}")
-
 get_filename_component(OPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/qplacer/ops ABSOLUTE)
 get_filename_component(UTILITY_LIBRARY_DIRS ${CMAKE_CURRENT_BINARY_DIR}/qplacer/ops/utility ABSOLUTE)
 message(STATUS "OPS_DIR ${OPS_DIR}")

@@ -1,8 +1,12 @@
 __pycache__/
 build/
+thirdparty/
+thirdparty_backup/
+
+qplacer/benchmarks/
+qplacer/logs/
 qplacer/operators/
 qplacer/results/
 qplacer/test/
-qplacer/logs/
-qplacer/benchmarks/
-thirdparty/
+
+
