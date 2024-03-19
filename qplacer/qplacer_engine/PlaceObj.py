@@ -197,7 +197,6 @@ class PlaceObj(nn.Module):
         #     self.density*(self.density_factor * self.density_weight).item()
         #     ))
         # print(f"result : {result:.4f}")
-    
         if self.params.frequency_assign:
             self.frequency_force = self.op_collections.frequency_repulsion_op(pos)
             result = torch.add(result, self.frequency_force, 
@@ -225,6 +224,7 @@ class PlaceObj(nn.Module):
         obj.backward()
         self.op_collections.precondition_op(pos.grad, self.density_weight, self.update_mask)
         return obj, pos.grad
+
 
     def estimate_initial_learning_rate(self, x_k, lr):
         """

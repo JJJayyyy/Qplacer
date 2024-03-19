@@ -333,9 +333,12 @@ class BasicPlace(nn.Module):
         """
         # CPU version by default...
         pws_op = pws.PinWeightSum(
-            flat_nodepin=data_collections.flat_node2pin_map.cpu(),
-            nodepin_start=data_collections.flat_node2pin_start_map.cpu(),
-            pin2net_map=data_collections.pin2net_map.cpu(),
+            # flat_nodepin=data_collections.flat_node2pin_map.cpu(),
+            # nodepin_start=data_collections.flat_node2pin_start_map.cpu(),
+            # pin2net_map=data_collections.pin2net_map.cpu(),
+            flat_nodepin=data_collections.flat_node2pin_map,
+            nodepin_start=data_collections.flat_node2pin_start_map,
+            pin2net_map=data_collections.pin2net_map,
             num_nodes=placedb.num_nodes,
             algorithm='node-by-node')
         return pws_op
@@ -428,7 +431,6 @@ class BasicPlace(nn.Module):
             num_terminal_NIs=placedb.num_terminal_NIs,
             num_filler_nodes=placedb.num_filler_nodes)
         # for standard cell legalization
-        # legalize_alg = mg_legalize.MGLegalize
         legalize_alg = greedy_legalize.GreedyLegalize
         gl = legalize_alg(
             node_size_x=data_collections.node_size_x,
