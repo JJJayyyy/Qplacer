@@ -1,0 +1,6 @@
+set(OP_NAME draw_place)
+
+set(TARGET_NAME ${OP_NAME})
+
+file(GLOB INSTALL_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.py)
+install(FILES ${INSTALL_SRCS} DESTINATION qplacement/ops/${OP_NAME})
