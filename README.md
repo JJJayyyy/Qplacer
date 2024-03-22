@@ -7,8 +7,13 @@ An efficient tool leveraging deep learning techniques to optimize nonlinear supe
 #### Who will benefit
 Researchers on quantum hardware device design, quantum device manufacture, and quantum design automation.
 
+#### Reference Flow
 
+<img src=images/overview.png width=600>
 
+#### Sample Result
+
+<img src=images/eagle.png width=600>
 
 ## Publications
 
