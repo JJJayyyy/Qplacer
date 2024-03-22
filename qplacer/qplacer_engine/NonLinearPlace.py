@@ -366,8 +366,7 @@ class NonLinearPlace(BasicPlace.BasicPlace):
                             ## only detect divergence when overflow is relatively low but not too low
                              # sometimes maybe too aggressive...
                             div_flag = check_divergence(divergence_list, window=3, threshold=0.1 * overflow_list[-1])
-                            if (params.stop_overflow * 1.1 < overflow_list[-1] < params.stop_overflow * 4
-                                and div_flag):
+                            if (params.stop_overflow * 1.1 < overflow_list[-1] < params.stop_overflow * 4 and div_flag):
                                 self.pos[0].data.copy_(best_pos[0].data)
                                 stop_placement = 1
                                 logging.error("possible DIVERGENCE detected, roll back to the best position recorded")
@@ -424,6 +423,7 @@ class NonLinearPlace(BasicPlace.BasicPlace):
                         model.op_collections.update_gamma_op(Lgamma_step, Llambda_metrics[-1][-1].overflow)
                     else:
                         model.op_collections.precondition_op.set_overflow(Llambda_metrics[-1][-1].overflow)
+                        
                     if Lgamma_stop_criterion(Lgamma_step, Lgamma_metrics) or stop_placement == 1:
                         break
 

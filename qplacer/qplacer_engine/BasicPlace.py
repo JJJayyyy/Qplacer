@@ -331,11 +331,7 @@ class BasicPlace(nn.Module):
         @param placedb placement database
         @param data_collections a collection of all data and variables required for constructing the ops
         """
-        # CPU version by default...
         pws_op = pws.PinWeightSum(
-            # flat_nodepin=data_collections.flat_node2pin_map.cpu(),
-            # nodepin_start=data_collections.flat_node2pin_start_map.cpu(),
-            # pin2net_map=data_collections.pin2net_map.cpu(),
             flat_nodepin=data_collections.flat_node2pin_map,
             nodepin_start=data_collections.flat_node2pin_start_map,
             pin2net_map=data_collections.pin2net_map,
@@ -353,7 +349,6 @@ class BasicPlace(nn.Module):
         @param device cpu or cuda
         """
         # wirelength cost
-
         POWVFILE = os.path.abspath(os.path.join(os.path.dirname(__file__),
                          "../../thirdparty/NCTUgr.ICCAD2012/POWV9.dat"))
         POSTFILE = os.path.abspath(os.path.join(os.path.dirname(__file__),
@@ -519,7 +514,7 @@ class BasicPlace(nn.Module):
         @param params parameters
         @param placedb placement database
         """
-        return draw_place.DrawPlace(placedb)
+        return draw_place.DrawPlace(params, placedb)
 
 
     def validate(self, placedb, pos, iteration):

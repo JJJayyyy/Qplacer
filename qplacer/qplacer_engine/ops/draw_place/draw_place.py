@@ -14,6 +14,7 @@ class DrawPlaceFunction(Function):
             bin_size_x, bin_size_y, 
             num_movable_nodes, num_filler_nodes, 
             filename,
+            num_qubit,
             node_in_group,
             ):
         ret = PlaceDrawer.PlaceDrawer.forward(
@@ -26,6 +27,7 @@ class DrawPlaceFunction(Function):
                 bin_size_x, bin_size_y, 
                 num_movable_nodes, num_filler_nodes, 
                 filename,
+                num_qubit,
                 node_in_group
                 )
         return ret 
@@ -34,7 +36,7 @@ class DrawPlace(object):
     """ 
     @brief Draw placement
     """
-    def __init__(self, placedb):
+    def __init__(self, params, placedb):
         """
         @brief initialization 
         """
@@ -54,6 +56,7 @@ class DrawPlace(object):
         self.num_movable_nodes = placedb.num_movable_nodes
         self.num_filler_nodes = placedb.num_filler_nodes
         self.node_in_group = placedb.node_in_group
+        self.num_qubit = params.num_qubit
 
     def forward(self, pos, filename): 
         """ 
@@ -78,6 +81,7 @@ class DrawPlace(object):
                 self.num_movable_nodes, 
                 self.num_filler_nodes, 
                 filename,
+                self.num_qubit,
                 self.node_in_group,
                 )
 

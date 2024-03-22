@@ -1,14 +1,16 @@
 from shapely.geometry import Polygon, Point
+from shapely.affinity import translate
 from matplotlib.patches import Patch
 import matplotlib.colors as mcolors
-from collections import defaultdict
-from collections import Counter
+from collections import defaultdict, Counter, deque
 import matplotlib.pyplot as plt
 from scipy.ndimage import label
+import networkx as nx
 import numpy as np
 import itertools
 import logging
 import math
+import copy
 from utils import (parse_def_file, parse_lef_file, 
                    generate_qubit_polygons, generate_wireblk_polygons)
 
@@ -157,7 +159,7 @@ class FreqCollisionChecker:
         return False
 
 
-    def plot_collisions(self, collision_width=5, verbal=False):
+    def plot_collisions(self, collision_width=5, suffix="", verbal=False):
         self.total_collision_length = 0
         fig, ax = plt.subplots()
         # component vitualization
@@ -234,8 +236,8 @@ class FreqCollisionChecker:
         q_sm.set_array([])
         r_sm = plt.cm.ScalarMappable(cmap=self.rcm, norm=self.res_f_norm)
         r_sm.set_array([])
-        cbar_q_ax = fig.add_axes([0.75, 0.15, 0.03, 0.7]) 
-        cbar_r_ax = fig.add_axes([0.90, 0.15, 0.03, 0.7])
+        cbar_q_ax = fig.add_axes([0.9, 0.15, 0.03, 0.7]) 
+        cbar_r_ax = fig.add_axes([1.05, 0.15, 0.03, 0.7])
         cbar_q = plt.colorbar(q_sm, cax=cbar_q_ax, fraction=0.046, pad=0.04)
         cbar_q.set_label('Qubit Frequencies', rotation=270, labelpad=15)
         cbar_r = fig.colorbar(r_sm, cax=cbar_r_ax)
@@ -246,13 +248,15 @@ class FreqCollisionChecker:
         cbar_r.ax.yaxis.set_label_position('left')
 
         ax.set_aspect('equal')
-        plt.xlabel('X-axis (microns)')
-        plt.ylabel('Y-axis (microns)')
+        # plt.xlabel('X-axis (microns)')
+        # plt.ylabel('Y-axis (microns)')
+
         # legend_elements = [Patch(facecolor=self.qubit_f_cm[freq], label=freq) for freq in self.freq_list]
         # legend_elements.append(Patch(facecolor=self.collision_color, label='collision'))
         # plt.legend(handles=legend_elements, title="Frequencies", loc='upper left', bbox_to_anchor=(1, 1))
-        plt.subplots_adjust(right=0.75)
-        fig_path = f'{self.params.debugging_dir}/{self.params.topology}_collision_check.png'
+        plt.subplots_adjust(right=1.5)
+        plt.tight_layout()
+        fig_path = f'{self.params.debugging_dir}/{self.params.topology}_collision_check{suffix}.png'
         plt.savefig(fig_path)
         logging.info(f'save figure {fig_path}')
         return len(count_sum)
@@ -378,7 +382,7 @@ class FreqCollisionChecker:
         n_y_grids = math.ceil(self.params.substrate_area[1] / grid_size) + 1
         # poly position, grid
         self.grid = np.zeros((n_x_grids, n_y_grids), dtype=int)
-        print(type(self.grid))
+        # print(type(self.grid))
         self.poly_2_pos = dict()
         self.pos_2_poly = np.full((n_x_grids, n_y_grids), '', dtype=object)
 
@@ -421,7 +425,7 @@ class FreqCollisionChecker:
             for wire, sects in sections.items():
                 num_wireblks = len(self.edges_to_poly_map[idx_to_components[wire]])
                 largest_segments_idx = max(range(len(sects)), key=lambda x: len(sects[x]))
-                if len(sects[largest_segments_idx])/num_wireblks > 0.7:
+                if len(sects[largest_segments_idx])/num_wireblks > 0.5:
                     other_sections = [section for i, section in enumerate(sects) if i != largest_segments_idx]
                     # print(np.vstack(other_sections))
                     # print()
@@ -433,37 +437,61 @@ class FreqCollisionChecker:
                 #     print(i, len(sec))
             return move_minor
         
-        def find_adjacent_spaces(segment):
-            adjacent_spaces = set()
-            for x, y in segment:
-                for dx, dy in self.offsets:
-                    adj_x, adj_y = x + dx, y + dy
-                    if (0 <= adj_x < n_x_grids and 0 <= adj_y < n_y_grids) and self.grid[adj_y][adj_x] == 0:
-                        adjacent_spaces.add((adj_y, adj_x))     # y-axe/row, x-axe/column
-            return list(adjacent_spaces)
+        def find_adjacent_spaces(segment, least_num):
+            # adjacent_spaces = set()
+            # for y, x in segment:    # y-axe/row, x-axe/column
+            #     for dx, dy in self.offsets:
+            #         adj_x, adj_y = x + dx, y + dy
+            #         if (0 <= adj_x < n_x_grids and 0 <= adj_y < n_y_grids) and self.grid[adj_y][adj_x] == 0:
+            #             adjacent_spaces.add((adj_y, adj_x))     # y-axe/row, x-axe/column
+            # return list(adjacent_spaces)
+
+            segment = [tuple(row) for row in segment]
+            visited = set(segment)
+            ava_space = set()
+            queue = deque(segment)
+            while queue:
+                y, x = queue.popleft()
+                for dy, dx in self.offsets:
+                    adj_y, adj_x = y + dy, x + dx
+                    if (0 <= adj_x < n_x_grids and 0 <= adj_y < n_y_grids) \
+                    and self.grid[adj_y][adj_x] == 0 and (adj_y, adj_x) not in visited:
+                        visited.add((adj_y, adj_x))
+                        ava_space.add((adj_y, adj_x))
+                        queue.append((adj_y, adj_x))
+                        if len(ava_space) >= least_num:
+                            return list(ava_space)
+            return []
 
         def count_touches(space, segment):
-            return sum((space[0]+dx, space[1]+dy) in segment for dx, dy in self.offsets)
+            count = 0
+            for dx, dy in self.offsets:
+                for seg_y, seg_x in segment:
+                    if space[0]+dy == seg_y and space[1]+dx == seg_x:
+                        count +=1
+            return count
+            # return sum((space[0]+dy, space[1]+dx) in segment for dx, dy in self.offsets)
 
         def move_to_available_space(rest_segments, largest_segment):
-            available_spaces = find_adjacent_spaces(largest_segment)
-            print(f'available_spaces: {available_spaces}')
-            available_spaces.sort(key=lambda space: count_touches(space, largest_segment), reverse=True)
-            print(f'available_spaces: {available_spaces}')
+            available_spaces = find_adjacent_spaces(largest_segment, len(rest_segments))
             new_positions = []
-            for i, space in enumerate(available_spaces):
-                if i < len(rest_segments):
-                    new_positions.append(space)
+            if len(available_spaces) > 0:
+                available_spaces.sort(key=lambda space: count_touches(space, largest_segment), reverse=True)
+                print(f'available_spaces: {available_spaces}')
+                for i, space in enumerate(available_spaces):
+                    if i < len(rest_segments):
+                        new_positions.append(space)
             return new_positions, len(available_spaces) >= len(rest_segments)
     
         def change_pos(origin_pos, latest_pos):
-            print(origin_pos, latest_pos)
+            # print(origin_pos, latest_pos)
             assert len(origin_pos) == len(latest_pos)
             for (row, col), (new_row, new_col) in zip(origin_pos, latest_pos):
-                print(row, col, '/', new_row, new_col)
                 # find poly
                 poly_name = self.pos_2_poly[row][col]
                 idx = self.grid[row][col]
+                # print(row, col, '/', new_row, new_col, poly_name, idx)
+
                 assert poly_name != '', f'poly_name <{poly_name}>'
                 # clear origin position
                 self.grid[row][col] = 0
@@ -473,32 +501,127 @@ class FreqCollisionChecker:
                 self.pos_2_poly[new_row][new_col] = poly_name
                 self.poly_2_pos[poly_name]['row'] = new_row
                 self.poly_2_pos[poly_name]['col'] = new_col
+
+                # also change poly
+                # print(self.all_polygons[poly_name].centroid, row, col, new_row, new_col)
+                # print(Point(col*grid_size+grid_size/2, row*grid_size+grid_size/2))
+                # print(Point(new_col*grid_size+grid_size/2, new_row*grid_size+grid_size/2))
+                delta_x = (new_col*grid_size+grid_size/2) - (col*grid_size+grid_size/2)
+                delta_y = (new_row*grid_size+grid_size/2) - (row*grid_size+grid_size/2)
+                new_polygon = translate(self.all_polygons[poly_name], xoff=delta_x, yoff=delta_y)
+                self.all_polygons[poly_name] = new_polygon
+                self.wireblk_polygons[poly_name] = new_polygon
+                # print(self.all_polygons[poly_name].centroid, self.wireblk_polygons[poly_name].centroid)
+
+        def remove_pos(origin_pos, wire):
+            for (row, col) in origin_pos:
+                poly_name = self.pos_2_poly[row][col]
+                # print(row, col, '/', poly_name)
+
+                assert poly_name != '', f'poly_name <{poly_name}>'
+                # clear origin position
+                self.grid[row][col] = 0
+                self.pos_2_poly[row][col] = ''
+                _ = self.poly_2_pos.pop(poly_name, None)
+
+                # also change poly
+                self.all_polygons.pop(poly_name, None)
+                self.wireblk_polygons.pop(poly_name, None)
+                edge_name = idx_to_components[wire]
+                self.edges_to_poly_map[edge_name].remove(poly_name)
+
         
         disjoint_sections = find_disjoint_sections(self.grid)
-        largest_sections = find_largest_section(disjoint_sections)
+        for edge, sections in disjoint_sections.items():
+            sorted_disjoint_sections = sorted(sections, key=lambda x: len(x), reverse=True)
+            disjoint_sections[edge] = sorted_disjoint_sections
         print(disjoint_sections.keys())
-        # for wire, sections in disjoint_sections.items():
-        #     print(f"Wire {wire} has {len(sections)} disjoint sections")
-        #     for section in sections:
-        #         print(len(section))
+        # print(disjoint_sections)
 
-        # test = largest_sections[30]
-        # new_positions, fittable = move_to_available_space(test['rest'], test['max'])
-        for wire, segments in largest_sections.items():
+        disjoint_sections_copy = copy.deepcopy(disjoint_sections)
+        for wire, sections in disjoint_sections_copy.items():
             print(f"wire : {wire}")
-            new_positions, fittable = move_to_available_space(segments['rest'], segments['max'])
-            print(f"Ava space is fittable: {fittable}, new positions: {new_positions}")
-            if fittable:
-                change_pos(segments['rest'], new_positions)
+            for i, cur_section in enumerate(sections):
+                rest_of_sections = np.vstack(sections[:i] + sections[i+1:])
+                new_positions, fittable = move_to_available_space(rest_of_sections, cur_section)
+                print(f"{i}: Ava space is fittable: {fittable}")
+                if fittable:
+                    change_pos(rest_of_sections, new_positions)
+                    removed_value = disjoint_sections.pop(wire, None)
+                    if removed_value is None:
+                        assert 0,  f"{wire} was not found in the dictionary"
+                    break
+        self.print_grid()
+
+        print(disjoint_sections.keys())
+        disjoint_sections_copy = copy.deepcopy(disjoint_sections)
+        for wire, sections in disjoint_sections_copy.items():
+            print(f"wire : {wire}")
+            total_length = sum(len(lst) for lst in sections)
+            accumulated_len = 0
+            remove_flag = False
+            for i, cur_section in enumerate(sections):
+                if not remove_flag:
+                    accumulated_len += len(cur_section)
+                    if accumulated_len/total_length > 0.85:
+                        remove_flag = True
+                else:
+                    print(f'remove {i}: {cur_section}')
+                    remove_pos(cur_section, wire)
+            if remove_flag:
                 removed_value = disjoint_sections.pop(wire, None)
                 if removed_value is None:
                     assert 0,  f"{wire} was not found in the dictionary"
-        print(disjoint_sections.keys())
         self.print_grid()
+
+        # disjoint_sections = find_disjoint_sections(self.grid)
+        # largest_sections = find_largest_section(disjoint_sections)
+        # for wire, segments in largest_sections.items():
+        #     print(f"wire : {wire}")
+        #     new_positions, fittable = move_to_available_space(segments['rest'], segments['max'])
+        #     print(f"Ava space is fittable: {fittable}, new positions: {new_positions}")
+        #     if fittable:
+        #         change_pos(segments['rest'], new_positions)
+        #         removed_value = disjoint_sections.pop(wire, None)
+        #         if removed_value is None:
+        #             assert 0,  f"{wire} was not found in the dictionary"
+        # print(disjoint_sections.keys())
+        # self.print_grid()
         
 
 
+    def check_integration(self, verbal=True):
+        def create_touch_graph(polygons):
+            G = nx.Graph()
+            for i, poly_name in enumerate(polygons):
+                G.add_node(poly_name)
+            for (i, poly1_name), (j, poly2_name) in itertools.combinations(enumerate(polygons), 2):
+                poly1 = self.all_polygons[poly1_name]
+                poly2 = self.all_polygons[poly2_name]
+                if poly1.touches(poly2):
+                    G.add_edge(poly1_name, poly2_name)
+            return G
 
+        integration_cnt = 0
+        edge_subgraph = defaultdict(list)
+        for edge, polys_list in self.edges_to_poly_map.items():
+            G = create_touch_graph(polys_list)
+            if nx.is_connected(G):
+                integration_cnt += 1
+            else:
+                connected_components = nx.connected_components(G)
+                subgraphs = [G.subgraph(c).copy() for c in connected_components]
+                # Print the subgraphs for this edge
+                if verbal:
+                    print(f"Edge {edge} - Subgraphs:")
+                for i, sg in enumerate(subgraphs, 1):
+                    node_list = list(sg.nodes())
+                    if verbal:
+                        print(f"  Subgraph {i}: Nodes ({len(node_list)}) - {node_list}")
+                    edge_subgraph[edge].append(node_list)
+        if verbal:
+            print(f'{integration_cnt}/{len(self.edges_to_poly_map.keys())} edges are connected, issue edges: {list(edge_subgraph.keys())}')
+        return edge_subgraph
 
 
 

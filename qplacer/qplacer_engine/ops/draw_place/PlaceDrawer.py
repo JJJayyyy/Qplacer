@@ -35,6 +35,7 @@ class PlaceDrawer(object):
                 num_movable_nodes,
                 num_filler_nodes,
                 filename,
+                num_qubit,
                 node_in_group,
                 iteration=None):
         """
@@ -225,20 +226,32 @@ class PlaceDrawer(object):
                     
             # draw cells
             ctx.set_line_width(line_width * 2)
-            ctx.set_source_rgba(0, 0, 1, alpha=0.5)  # Solid color
+            # ctx.set_source_rgba(0, 0, 1, alpha=0.5)  # Solid color
             for i in range(num_movable_nodes):
-                ctx.rectangle(node_xl[i], node_yl[i], node_xh[i] - node_xl[i],
-                              node_yh[i] -
-                              node_yl[i])  # Rectangle(xl, yl, w, h)
+                if i < num_qubit:
+                    ctx.set_source_rgba(1, 0, 0, alpha=0.5)
+                else:
+                    ctx.set_source_rgba(0, 0, 1, alpha=0.5)
+    
+                ctx.rectangle(node_xl[i], 
+                              node_yl[i], 
+                              node_xh[i] - node_xl[i],
+                              node_yh[i] - node_yl[i])  # Rectangle(xl, yl, w, h)
                 ctx.fill()
-            ctx.set_source_rgba(0, 0, 0.8, alpha=0.8)  # Solid color
+
+            # ctx.set_source_rgba(0, 0, 0.8, alpha=0.8)  # Solid color
             for i in range(num_movable_nodes):
+                if i < num_qubit:
+                    ctx.set_source_rgba(0.8, 0, 0, alpha=0.8)
+                else:
+                    ctx.set_source_rgba(0, 0, 0.8, alpha=0.8)
+
                 draw_rect(node_xl[i], node_yl[i], node_xh[i], node_yh[i])
                 
             ## draw cell indices
-            for i in range(num_movable_nodes):
-               ctx.move_to((node_xl[i]+node_xh[i])/2, (node_yl[i]+node_yh[i])/2)
-               ctx.show_text("%d" % (i))
+            # for i in range(num_movable_nodes):
+            #    ctx.move_to((node_xl[i]+node_xh[i])/2, (node_yl[i]+node_yh[i])/2)
+            #    ctx.show_text("%d" % (i))
 
             #for i in range(num_nodes):
             #    ctx.move_to((node_xl[i]+node_xh[i])/2, (node_yl[i]+node_yh[i])/2)

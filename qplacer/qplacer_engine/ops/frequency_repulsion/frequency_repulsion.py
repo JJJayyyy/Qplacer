@@ -55,7 +55,8 @@ class FrequencyRepulsionFunction(Function):
 
         energy = torch.zeros_like(ctx.pos)
         epsilon = 1e-2
-        force_ratio = 0.01
+        # force_ratio = 0.01
+        force_ratio = 0.5
         energy = frequency_repulsion_cpp.frequency_repulsion(
             ctx.pos,
             node_size_x,

@@ -6,7 +6,7 @@ DREAMPLACE_BEGIN_NAMESPACE
 template <typename T>
 void updateTouchedBlanksCPU(
     int blank_bin_id_y, 
-    Blank<T>new_blank,
+    Blank<T> new_blank,
     std::vector<std::vector<Blank<T>>>& edge_touch_blanks,
     bool remove
     ) {
@@ -80,9 +80,9 @@ void updateTouchedBlanksCPU(
                     break;      // post touch represents following block will not need to check
                 } else if (new_blank.xh < blk.xl){
                     // std::cout << "new blk before this blk" << std::endl;
-                    if (pre_touch_bi == -1){     // only do not touch any blocks
+                    if (pre_touch_bi == -1 && loc_bi== -1){     // only do not touch any blocks
                         loc_bi = bi;
-                    } else{
+                    } else {
                         break;   // pre_blk-blk| |this blk. so not need to check following blks
                     }
                 } else if (new_blank.xl > blk.xh){
@@ -125,21 +125,62 @@ void updateTouchedBlanksCPU(
 
 
 template <typename T>
+T checkTouchedEdgeLengthCPU(
+    int blank_num_bins_y,
+    int best_blank_bin_id_y, 
+    T target_xl,
+    T width,
+    const std::vector<std::vector<Blank<T>>>& edge_places
+    ) {
+    T touched_edge_length = 0;
+
+    // find edge current/upper/lower 0, +1, -1
+    for (int offset_y = 0; abs(offset_y) <= 1; offset_y = (offset_y > 0)? -offset_y : -(offset_y-1)){
+        int blank_bin_id_y = best_blank_bin_id_y + offset_y;
+        if (blank_bin_id_y < 0 || blank_bin_id_y >= blank_num_bins_y) { 
+            continue; 
+        }
+        const std::vector<Blank<T> >& blanks = edge_places.at(blank_bin_id_y); // edges in this bin 
+        if (blanks.size() == 0){
+            continue;
+        } else {
+            for (unsigned int bi = 0; bi < blanks.size(); ++bi) {
+                const Blank<T>& blk = blanks.at(bi);
+                // std::cout << "blk.xl: " << blk.xl << ", blk.xh: " << blk.xh << std::endl;
+                if (blk.xl <= target_xl && (target_xl+width) <= blk.xh && offset_y !=0){
+                    // std::cout << "offset_y: " << offset_y << ", touched length: " << width << std::endl;
+                    touched_edge_length += width;
+                }
+                if (offset_y ==0){
+                    if (target_xl == blk.xh) {
+                        // std::cout << "front offset_y: " << offset_y << ", touched length: " << blk.yh - blk.yl << std::endl;
+                       touched_edge_length += (blk.yh - blk.yl);
+                    } else if (target_xl+width == blk.xl){
+                        // std::cout << "back offset_y: " << offset_y << ", touched length: " << blk.yh - blk.yl << std::endl;
+                        touched_edge_length += (blk.yh - blk.yl);
+                    }
+                }
+            }
+        }
+    }
+    // std::cout << "touched_edge_length: " << touched_edge_length << std::endl;
+    return touched_edge_length;
+}
+
+
+template <typename T>
 void checkBlanksCPU(
     const std::vector<std::vector<Blank<T> > >& bin_blanks, 
     const char* blanks_name, 
     bool printable) {
     if (printable) std::cout << blanks_name << ": " << std::endl;
     for (const auto& row : bin_blanks) {
-        int xl = -1;
         if (row.size() > 0) {
+            int xl = -1;
             for (const auto& blank : row) {
                 if (printable) std::cout << blank.toString() << " ";
-                // dreamplaceAssert(xl <= blank.xl);
-                // dreamplaceAssert(blank.xl < blank.xh);
                 dreamplaceAssertMsg(xl <= int(blank.xl), "xl: %d, blank.xl: %d", xl, int(blank.xl));
                 dreamplaceAssertMsg(blank.xl < blank.xh, "blank.xl: %g, blank.xh: %g", blank.xl, blank.xh);
-                
                 xl = blank.xh;
             }
             if (printable) std::cout << std::endl;
@@ -189,6 +230,7 @@ void legalizeBinCPU(
         int touch_blanks_initial_y = 0;
         int touch_blanks_end_y = blank_num_bins_y;
         std::vector<std::vector<Blank<T>>> edge_touch_blanks (num_bins_x*blank_num_bins_y);
+        std::vector<std::vector<Blank<T>>> edge_places (num_bins_x*blank_num_bins_y); // edge place
 
         if (!lr_flag) {
             std::reverse(cells.begin(), cells.end());
@@ -212,7 +254,12 @@ void legalizeBinCPU(
                 // std::cout << "Clean edge " << edge_idx << std::endl; 
                 for (auto& inner_vector : edge_touch_blanks) {
                     inner_vector.clear();
-                    }
+                }
+                
+                for (auto& inner_vector : edge_places) {    // clean the edge place
+                    inner_vector.clear();
+                }
+
                 edge_idx++;
                 empty_edge_touch_blanks = true;
             }
@@ -244,8 +291,7 @@ void legalizeBinCPU(
             //     << ", init_xl: " << init_xl << ", init_yl: " << init_yl 
             //     << ", blank_bin_id_dist_y: " << blank_bin_id_dist_y << ", blank_initial_bin_id_y: " 
             //     << blank_initial_bin_id_y << std::endl;
-            // checkBlanksCPU(bin_blanks, "check bin_blanks", true);
-            // std::cout << std::endl;
+            checkBlanksCPU(bin_blanks, "check bin_blanks", false);
 
             if (!empty_edge_touch_blanks){
                 int blank_bin_id_dist_y = std::max(std::abs(touch_blanks_initial_y - blank_initial_bin_id_y), 
@@ -268,6 +314,7 @@ void legalizeBinCPU(
                     T row_best_xl = -1; 
                     T row_best_yl = -1; 
                     bool search_flag = true; 
+                    T best_touched_edge_length = 0;
 
                     // std::cout << empty_edge_touch_blanks << " | bin_id_offset_y: " << bin_id_offset_y 
                     //     << " | edge_touch_blanks.at( " << blank_bin_id << " ).size() : " 
@@ -296,16 +343,34 @@ void legalizeBinCPU(
                                 target_xl = (intersect_blank.xh-width);
                             }
                             T cost = fabs(target_xl-init_xl)+fabs(target_yl-init_yl); 
-
                             // std::cout << "target_xl: " << target_xl << ", target_yl: " << target_yl << " | Cost: " << cost << std::endl;
 
-                            // update best cost 
-                            if (cost < row_best_cost) {
+                            T touched_edge_length = checkTouchedEdgeLengthCPU(blank_num_bins_y, blank_bin_id, target_xl, width, edge_places);
+                            // std::cout << "touched_edge_length: " << touched_edge_length << std::endl;
+                            
+                            // update best_touched_edge_length and best cost 
+                            if (touched_edge_length > best_touched_edge_length){
                                 std::copy(blank_index_offset, blank_index_offset+num_node_rows, row_best_blank_bi); 
                                 row_best_cost = cost; 
+                                best_touched_edge_length = touched_edge_length;
                                 row_best_xl = target_xl; 
-                                row_best_yl = target_yl; 
+                                row_best_yl = target_yl;
+                            } else if (touched_edge_length == best_touched_edge_length){
+                                if (cost < row_best_cost) {
+                                    std::copy(blank_index_offset, blank_index_offset+num_node_rows, row_best_blank_bi); 
+                                    row_best_cost = cost; 
+                                    row_best_xl = target_xl; 
+                                    row_best_yl = target_yl; 
+                                }
                             }
+
+                            // update best cost 
+                            // if (cost < row_best_cost) {
+                            //     std::copy(blank_index_offset, blank_index_offset+num_node_rows, row_best_blank_bi); 
+                            //     row_best_cost = cost; 
+                            //     row_best_xl = target_xl; 
+                            //     row_best_yl = target_yl; 
+                            // }
                         }
                     }
 
@@ -414,7 +479,6 @@ void legalizeBinCPU(
                                     target_xl = (intersect_blank.xh-width);
                                 }
                                 T cost = fabs(target_xl-init_xl)+fabs(target_yl-init_yl); 
-                                
                                 // std::cout << "target_xl: " << target_xl << ", target_yl: " << target_yl << " | Cost: " << cost << std::endl;
                                 
                                 // update best cost 
@@ -507,8 +571,7 @@ void legalizeBinCPU(
                 }
                 bin_cells.at(i).erase(bin_cells.at(i).begin()+ci);  // remove from cells 
 
-                // remove best blank if it exist in edge_touch_blanks
-                // std::cout << "------" << std::endl;
+                // best blank
                 int best_blank_bin_id = bin_id_x*blank_num_bins_y+best_blank_bin_id_y; 
                 Blank<T> best_blank;                                     
                 best_blank.xl = best_xl; 
@@ -517,6 +580,13 @@ void legalizeBinCPU(
                 best_blank.yh = best_blank_bin_id + row_height; 
                 // std::vector<Blank<T> >& blanks = bin_blanks.at(best_blank_bin_id);
                 // Blank<T> best_blank = blanks.at(best_blank_bi[row_offset]);
+
+                // add best blank to the edge_places
+                updateTouchedBlanksCPU(best_blank_bin_id_y, best_blank, edge_places, false);
+                checkBlanksCPU(edge_places, "check edge_places", false);
+
+                // remove best blank if it exist in edge_touch_blanks
+                // std::cout << "------" << std::endl;
                 updateTouchedBlanksCPU(best_blank_bin_id_y, best_blank, edge_touch_blanks, true);
 
                 // find touched blanks 0, +1, -1
@@ -576,10 +646,12 @@ void legalizeBinCPU(
 
                 // std::cout << "edge_touch_blanks" << std::endl;
                 // for (const auto& row : edge_touch_blanks) {
-                //     for (const auto& blank : row) std::cout << blank.toString() << " ";
-                //     std::cout << std::endl;
+                //     if (row.size() > 0) {
+                //         for (const auto& blank : row) std::cout << blank.toString() << " ";
+                //         std::cout << std::endl;
+                //     }
                 // }
-                // checkBlanksCPU(edge_touch_blanks, "check edge_touch_blanks", true);
+                checkBlanksCPU(edge_touch_blanks, "check edge_touch_blanks", false);
 
                 // check whether there are touched blanks 
                 bool first_y = true;
