@@ -1,11 +1,13 @@
-<h2><p align="center"> Qplacer: Deep learning toolkit-enable Superconducting Physical Qubit Placement </p></h2>
+<h1><p align="center"> Qplacer: Deep learning toolkit-enable Superconducting Physical Qubit Placement </p></h2>
 
 
-### What it is doing
+#### What it is doing
 An efficient tool leveraging deep learning techniques to optimize nonlinear superconducting physical qubit layouts. Developed based on [Dreamplace](https://github.com/limbo018/DREAMPlace) with flexible deep learning toolkits, it runs on both CPUs and GPUs for versatile deployment.
 
-### Who will benefit
+#### Who will benefit
 Researchers on quantum hardware device design, quantum device manufacture, and quantum design automation.
+
+
 
 
 ## Publications
