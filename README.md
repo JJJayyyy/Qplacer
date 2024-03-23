@@ -8,12 +8,15 @@ An efficient tool leveraging deep learning techniques to optimize nonlinear supe
 Researchers on quantum hardware device design, quantum device manufacture, and quantum design automation.
 
 #### Reference Flow
-
-<img src=images/overview.png width=600>
+<p align="center">
+    <img src="images/overview.png" width="100%">
+</p>
 
 #### Sample Result
+<p align="center">
+    <img src="images/eagle.png" width="60%">
+</p>
 
-<img src=images/eagle.png width=600>
 
 ## Publications
 
@@ -71,9 +74,8 @@ This project is best built using a [Docker](https://hub.docker.com) container to
 
 
 6. **Build:** 
-Navigate to the `qplacer` directory, which contains file `compile.sh`. Run `compile.sh`
+Navigate to the `qplacer` directory. Execute the `compile.sh`
     ```
-    cd qplacer
     ./compile.sh
     ```
     Where `build` is the directory where to compile the code, and `qplacer/operators` is the directory where to install operators.
@@ -87,7 +89,7 @@ Navigate to the `qplacer` directory, which contains file `compile.sh`. Run `comp
 
 ## Get Benchmarks
 
-To get quantum topology benchmarks, run the script `example.py` from the directory `qplacer`.
+To get quantum topology benchmarks, run the script `example.py` from the directory `qplacer`. The benchmark files and placement configuration files are saved in directory `qplacer/benchmark` and `qplacer/test`, respectively
 
 ```
 python example.py
@@ -95,13 +97,13 @@ python example.py
 
 ## Run Placer
 
-Before running, make sure the benchmarks have been downloaded and the python dependency packages have been installed.
+Before running, make sure the **benchmarks** have been created and the python dependency packages/operators have been installed/built successfully.
+
 Navigate to directory `qplacer` and run `qplacer_engine/Placer.py` with JSON configuration file for full placement.
 
 ```
 python qplacer_engine/Placer.py test/grid-25/wp_wf/grid-25_wp_wf.json
 ```
-
 
 ## Contact
 Junyao Zhang [Email](mailto:jz420@duke.edu), [Github issue](https://github.com/JJJayyyy/Qplacer/issues),
