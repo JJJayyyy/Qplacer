@@ -92,6 +92,14 @@ class NonLinearPlace(BasicPlace.BasicPlace):
                     "hpwl": self.op_collections.hpwl_op,
                     "overflow": self.op_collections.density_overflow_op, 
                 }
+                if len(placedb.regions) > 0:
+                    eval_ops.update(
+                        {
+                            "density": self.op_collections.fence_region_density_merged_op,
+                            "overflow": self.op_collections.fence_region_density_overflow_merged_op,
+                            "goverflow": self.op_collections.density_overflow_op,
+                        }
+                    )
 
                 # a function to initialize learning rate
                 def initialize_learning_rate(pos):
@@ -147,7 +155,9 @@ class NonLinearPlace(BasicPlace.BasicPlace):
                                     )
                                 )
                                 return True
-
+                            if len(placedb.regions) > 0 and model.update_mask.sum() == 0:
+                                logging.debug("All regions stop updating, finish global placement")
+                                return True
                         # a heuristic to detect divergence and stop early
                         if len(metrics) > 50:
                             cur_metric = metrics[-1][-1][-1]
@@ -261,7 +271,18 @@ class NonLinearPlace(BasicPlace.BasicPlace):
                         
                     #### stop updating fence regions that are marked stop, exclude the outer cell !
                     t3 = time.time()
-                    optimizer.step()    # for optimizer nesterov call both forward() and backward()
+                    if model.update_mask is not None:
+                        pos_bk = pos.data.clone()
+                        optimizer.step()
+
+                        for region_id, fence_region_update_flag in enumerate(model.update_mask):
+                            if fence_region_update_flag == 0:
+                                ### don't update cell location in that region
+                                mask = self.op_collections.fence_region_density_ops[region_id].pos_mask
+                                pos.data.masked_scatter_(mask, pos_bk[mask])
+                    else:
+                        optimizer.step()
+
                     logging.info("optimizer step %.3f ms" % ((time.time() - t3) * 1000))
 
                     # nesterov has already computed the objective of the next step
@@ -364,22 +385,31 @@ class NonLinearPlace(BasicPlace.BasicPlace):
                         for Lsub_step in range(model.Lsub_iteration):
                             ## divergence threshold should decrease as overflow decreases
                             ## only detect divergence when overflow is relatively low but not too low
-                             # sometimes maybe too aggressive...
-                            div_flag = check_divergence(divergence_list, window=3, threshold=0.1 * overflow_list[-1])
-                            if (params.stop_overflow * 1.1 < overflow_list[-1] < params.stop_overflow * 4 and div_flag):
+                            div_flag = check_divergence(
+                                # sometimes maybe too aggressive...
+                                divergence_list, window=3, threshold=0.1 * overflow_list[-1])
+                            if (
+                                len(placedb.regions) == 0
+                                and params.stop_overflow * 1.1 < overflow_list[-1] < params.stop_overflow * 4
+                                and div_flag
+                            ):
                                 self.pos[0].data.copy_(best_pos[0].data)
                                 stop_placement = 1
                                 logging.error("possible DIVERGENCE detected, roll back to the best position recorded")
 
                             one_descent_step(Lgamma_step, Llambda_density_weight_step, Lsub_step, iteration, Lsub_metrics)
 
-                            overflow_list.append(Llambda_metrics[-1][-1].overflow.data.item())
-                            divergence_list.append([Llambda_metrics[-1][-1].hpwl.data.item(),
-                                                    Llambda_metrics[-1][-1].overflow.data.item()])
+                            if len(placedb.regions) == 0:
+                                overflow_list.append(Llambda_metrics[-1][-1].overflow.data.item())
+                                divergence_list.append(
+                                    [Llambda_metrics[-1][-1].hpwl.data.item(),
+                                    Llambda_metrics[-1][-1].overflow.data.item()])
 
                             ## quadratic penalty and entropy injection
-                            if (iteration - last_perturb_iter > min_perturb_interval
-                                and check_plateau(overflow_list, window=15, threshold=0.001)):
+                            if (len(placedb.regions) == 0
+                                and iteration - last_perturb_iter > min_perturb_interval
+                                and check_plateau(overflow_list, window=15, threshold=0.001)
+                            ):
                                 if overflow_list[-1] > 0.9:  # stuck at high overflow
                                     model.quad_penalty = True
                                     model.density_factor *= 2
@@ -419,7 +449,9 @@ class NonLinearPlace(BasicPlace.BasicPlace):
                             break
 
                     # gradually reduce gamma to tradeoff smoothness and accuracy
-                    if Llambda_metrics[-1][-1].overflow is not None:
+                    if len(placedb.regions) > 0 and Llambda_metrics[-1][-1].goverflow is not None:
+                        model.op_collections.update_gamma_op(Lgamma_step, Llambda_metrics[-1][-1].goverflow)
+                    elif len(placedb.regions) == 0 and Llambda_metrics[-1][-1].overflow is not None:
                         model.op_collections.update_gamma_op(Lgamma_step, Llambda_metrics[-1][-1].overflow)
                     else:
                         model.op_collections.precondition_op.set_overflow(Llambda_metrics[-1][-1].overflow)

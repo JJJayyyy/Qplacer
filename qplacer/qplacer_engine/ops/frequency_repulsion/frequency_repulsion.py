@@ -78,39 +78,11 @@ class FrequencyRepulsionFunction(Function):
         logger.debug("frequency repulsion forward %.3f ms" % ((time.time()-tt)*1000))
         return abs_sum_energy
 
-    """
-        epsilon = torch.tensor(1e-2, 
-                               device=ctx.pos[0].device, 
-                               dtype=ctx.pos[0].dtype)
-        for node, potential_colliders in ctx.potential_collision_map.items():
-            for collider in potential_colliders:
-                dx = ctx.pos[collider] - ctx.pos[node]
-                dy = ctx.pos[collider+ctx.num_movable_nodes] - ctx.pos[node+ctx.num_movable_nodes]
-                distance_x = torch.max(abs(dx) - (node_size_x[collider] + node_size_x[node]), epsilon)
-                distance_y = torch.max(abs(dy) - (node_size_y[collider] + node_size_y[node]), epsilon)
-                
-                if distance_x < ctx.qubit_dist_threhold_x and distance_y < ctx.qubit_dist_threhold_y:
-                    force_x = force_ratio / (distance_x**2)
-                    force_y = force_ratio / (distance_y**2)
-                    # print(distance_x, distance_y, force_x, force_y)
-                    energy[node] += force_x if dx > 0 else -force_x
-                    energy[node+ctx.num_movable_nodes] += force_y if dy > 0 else -force_y
-
-        ctx.energy = energy
-    """
-
-
 
     @staticmethod
     def backward(ctx, grad_pos):
         tt = time.time()
-
         output = ctx.energy * grad_pos
-
-        # logger.info(f'grad_pos {grad_pos.shape}: {grad_pos}')
-        # print(f'ctx.energy {ctx.energy.shape}: {ctx.energy}')
-
-
         if grad_pos.is_cuda:
             torch.cuda.synchronize()
         logger.debug("frequency force backward %.3f ms" % ((time.time() - tt) * 1000))

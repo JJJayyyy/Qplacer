@@ -152,5 +152,5 @@ class Params:
         """
         if self.def_input is not None and os.path.exists(self.def_input): # LEF/DEF 
             return "def"
-        else: # Bookshelf
-            return "pl"
+        else: 
+            raise Exception("Unsupported file format, please change to LEF/DEF")
