@@ -47,9 +47,9 @@ area_dict = {
 }
 
 qubit_num_dict = {
-    'grid-4': ('new_grid', 4), 
-    'grid-25': ('new_grid', 25),  
-    'grid-64':('new_grid', 64),
+    'grid-4': ('grid', 4), 
+    'grid-25': ('grid', 25),  
+    'grid-64':('grid', 64),
     'falcon':('ibm_falcon', 27), 
     'hummingbird':('ibm_hummingbird', 65), 
     'eagle':('ibm_eagle', 127),
@@ -80,24 +80,28 @@ class BenchmarkGenerator:
                                       topology=topology,
                                       scale_factor = self.bm_setting ['scale_factor'],
                                       q_freq_range = self.bm_setting['q_freq_range'],
-                                      q_th = self.bm_setting['q_th'],
                                       res_freq_range = self.bm_setting['res_freq_range'],
+                                      q_th = self.bm_setting['q_th'],
                                       res_th = self.bm_setting['res_th'],
-                                      partition_size = self.bm_setting['partition_size'],
-                                      qubit_size = self.bm_setting['qubit_size'],
                                       padding_size = self.bm_setting['padding_size'],
+                                      partition_size = self.bm_setting['partition_size'],
+                                      qubit_pad_size = self.bm_setting['qubit_pad_size'],
+                                      qubit_padding_size = self.bm_setting['qubit_padding_size'],
                                       benchmark_dir = self.bm_setting['benchmark_dir'],
                                       freq_assign = self.bm_setting['freq_assign'],
                                       partition = self.bm_setting['partition'],
                                       debugging = self.bm_setting['debugging'],
-                                      net_weight = self.bm_setting['net_weight']
+                                      net_weight = self.bm_setting['net_weight'],
+                                      seed = self.bm_setting['seed'],
                                       )
         self.params.debugging_dir = self.debugging_dir
         self.db = QplacementDatabase()
+        # if self.params.debugging:
+        #     logging.getLogger().setLevel(logging.DEBUG)
         # Build connectivity graph
         graph_builder = ConnectivityGraphBuilder(qubits=qubit_num_dict[topology][1], 
-                                                topology=qubit_num_dict[topology][0], 
-                                                debugging=self.params.debugging)
+                                                 topology=qubit_num_dict[topology][0], 
+                                                 debugging=self.params.debugging)
         self.db.c_graph, self.db.c_graph_pos_map = graph_builder.get_connectivity_graph()
         logging.info(f'Topology: {topology}, #Qubit: {len(self.db.c_graph.nodes())}')
         """ Assign Frequency """ 
@@ -105,10 +109,10 @@ class BenchmarkGenerator:
         self.db.qubit_to_freq_map = self.f_assigner.assign_qubit_frequencies(self.params.q_freq_range, self.params.q_th)
         self.db.edge_to_freq_map =  self.f_assigner.assign_resonator_frequencies(self.params.res_freq_range, self.params.res_th)
 
-        if self.params.debugging:
-            logging.debug(f'pos : {self.db.c_graph_pos_map}')
-            logging.debug(f'qubit_to_freq_map ({len(self.db.qubit_to_freq_map.keys())}): {self.db.qubit_to_freq_map}')
-            logging.debug(f'edge_to_freq_map ({len(self.db.edge_to_freq_map.keys())}): {self.db.edge_to_freq_map}')
+        logging.debug(f'pos : {self.db.c_graph_pos_map}')
+        logging.debug(f'qubit_to_freq_map ({len(self.db.qubit_to_freq_map.keys())}): {self.db.qubit_to_freq_map}')
+        logging.debug(f'edge_to_freq_map ({len(self.db.edge_to_freq_map.keys())}): {self.db.edge_to_freq_map}') 
+        if self.params.graph_debugging:
             fig, ax = plt.subplots()
             nx.draw(self.db.c_graph, self.db.c_graph_pos_map, with_labels=True, node_size=300, node_color="skyblue")
             ax.set_title(topology)
@@ -122,9 +126,12 @@ class BenchmarkGenerator:
         self.formator(debugging=self.params.debugging)
                 
         loaded_component_to_freq_map = {**self.db.qubit_to_freq_map, **self.db.poly_to_freq_map}
-        logging.info('wireblk: {}, components: {}'.format(
+        logging.info('Num wireblk: {}, Num components: {}'.format(
             len(self.db.poly_to_freq_map.keys()), 
-            len(loaded_component_to_freq_map.keys())))
+            len(loaded_component_to_freq_map.keys()),
+            ))
+        logging.info(f'Qubit size: {next(iter(self.db.qubit_geo_data.values()))}')
+        logging.info(f'Wireblock size: {next(iter(self.db.wireblk_def_data.values()))[0]}')
         
         area_x, area_y = substrate_area[0], substrate_area[1]
         # file_name = f'{topology}_wp' if self.params.partition else topology
@@ -143,7 +150,7 @@ class BenchmarkGenerator:
         }
         self.params.file_paths = file_paths
         self.params.file_name = file_name
-        
+
         """  Write the design files for placer """ 
         self.lefwriter  = LefFileWriter(self.params)
         self.defwriter  = DefFileWriter(self.params, area_x=area_x, area_y=area_y)
