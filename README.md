@@ -89,11 +89,8 @@ Navigate to the `qplacer` directory. Execute the `compile.sh`
 
 ## Get Benchmarks
 
-To get quantum topology benchmarks, run the script `example.py` from the directory `qplacer`. The benchmark files and placement configuration files are saved in directory `qplacer/benchmark` and `qplacer/test`, respectively
+To get quantum topology benchmarks, please refer the `qplacer/example.ipynb`. The benchmark files and placement configuration files will be saved in directory `qplacer/benchmark` and `qplacer/test`, respectively
 
-```
-python example.py
-```
 
 ## Run Placer
 
