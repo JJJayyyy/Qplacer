@@ -33,4 +33,4 @@ RUN pip install \
         setuptools>=39.1.0 \
         scipy>=1.1.0 \
         numpy>=1.24.4 \
-        shapely>=1.7.0
+        shapely>=1.7.0 \
