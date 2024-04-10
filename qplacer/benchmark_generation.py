@@ -1,6 +1,7 @@
 from shapely.errors import ShapelyDeprecationWarning
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
 import warnings
 import logging
 import argparse
@@ -36,14 +37,17 @@ logging.basicConfig(level=logging.INFO,
 
 """ parameters """
 area_dict = {
-    "grid-25": (7800, 7800),
-    "grid-64": (12900, 12900),
-    "falcon": (6900,6900),
-    "hummingbird": (10800, 10800),
-    "eagle" : (15300, 15300),
-    "Aspen-11" : (9000, 9000),
-    "Aspen-M" : (12900, 12900),
-    'xtree-53' : (9300, 9300)
+    "grid-25": (10000, 10000),
+    "falcon": (9000,9000),
+    "hummingbird": (14000, 14000),
+    "eagle" : (19000, 19000),
+    "Aspen-11" : (12000, 12000),
+    "Aspen-M" : (18000, 18000),
+    'xtree-53' : (12000, 12000),
+    # "grid-4": (3000, 3000),
+    # "grid-64": (12900, 12900),
+    # "xtree-17": (3000, 3000),
+    # "xtree-5": (2000, 2000),
 }
 
 qubit_num_dict = {
@@ -75,7 +79,7 @@ class BenchmarkGenerator:
             os.makedirs(self.debugging_dir, exist_ok=True)
             logging.info(f"The directory {self.debugging_dir} has been created.")
         
-    def __call__(self, topology, substrate_area=(10000, 10000)):
+    def __call__(self, topology, substrate_area=(10000, 10000), frequency_database=None):
         self.params = QplacementParam(substrate_area=substrate_area, 
                                       topology=topology,
                                       scale_factor = self.bm_setting ['scale_factor'],
@@ -98,16 +102,30 @@ class BenchmarkGenerator:
         self.db = QplacementDatabase()
         # if self.params.debugging:
         #     logging.getLogger().setLevel(logging.DEBUG)
-        # Build connectivity graph
+        
+        """ Build connectivity graph """
         graph_builder = ConnectivityGraphBuilder(qubits=qubit_num_dict[topology][1], 
                                                  topology=qubit_num_dict[topology][0], 
                                                  debugging=self.params.debugging)
         self.db.c_graph, self.db.c_graph_pos_map = graph_builder.get_connectivity_graph()
         logging.info(f'Topology: {topology}, #Qubit: {len(self.db.c_graph.nodes())}')
+
         """ Assign Frequency """ 
-        self.f_assigner = FrequencyAssigner(self.db.c_graph)
-        self.db.qubit_to_freq_map = self.f_assigner.assign_qubit_frequencies(self.params.q_freq_range, self.params.q_th)
-        self.db.edge_to_freq_map =  self.f_assigner.assign_resonator_frequencies(self.params.res_freq_range, self.params.res_th)
+        if frequency_database == None:
+            logging.warning("<CREATE> Frequency Assigner, assign frequency to Qubits and Couplers")
+            self.f_assigner = FrequencyAssigner(self.db.c_graph, seed=self.params.seed)
+            self.db.qubit_to_freq_map = self.f_assigner.assign_qubit_frequencies(self.params.q_freq_range, self.params.q_th)
+            self.db.edge_to_freq_map =  self.f_assigner.assign_resonator_frequencies(self.params.res_freq_range, self.params.res_th)
+        else:
+            logging.warning("<LOAD> Qubits/Couplers frequency from database")
+            graph_qubits = sorted(list(self.db.c_graph.nodes()))
+            db_qubits = sorted(set(frequency_database.qubit_to_freq_map.keys()))
+            assert graph_qubits == db_qubits, "graph node: {}, db freq_q: {}".format(graph_qubits, db_qubits)
+            assert set(self.db.c_graph.edges()) == set(frequency_database.edge_to_freq_map.keys()), \
+                "graph edge: {}, db freq_e: {}".format(set(self.db.c_graph.edges()), 
+                                                     set(frequency_database.edge_to_freq_map.keys()))
+            self.db.qubit_to_freq_map = frequency_database.qubit_to_freq_map
+            self.db.edge_to_freq_map = frequency_database.edge_to_freq_map
 
         logging.debug(f'pos : {self.db.c_graph_pos_map}')
         logging.debug(f'qubit_to_freq_map ({len(self.db.qubit_to_freq_map.keys())}): {self.db.qubit_to_freq_map}')
@@ -124,14 +142,15 @@ class BenchmarkGenerator:
         """ Prepare the data for Placer """ 
         self.formator = DesignFormator(self.params, self.db)
         self.formator(debugging=self.params.debugging)
-                
         loaded_component_to_freq_map = {**self.db.qubit_to_freq_map, **self.db.poly_to_freq_map}
-        logging.info('Num wireblk: {}, Num components: {}'.format(
+        logging.info('#Wireblk: {}, #Components: {}'.format(
             len(self.db.poly_to_freq_map.keys()), 
             len(loaded_component_to_freq_map.keys()),
             ))
-        logging.info(f'Qubit size: {next(iter(self.db.qubit_geo_data.values()))}')
-        logging.info(f'Wireblock size: {next(iter(self.db.wireblk_def_data.values()))[0]}')
+        logging.info("Qubit size: {} mm^2, Wireblock size: {} mm^2".format(
+            next(iter(self.db.qubit_geo_data.values()))['geometry'].area,
+            round(next(iter(self.db.wireblk_def_data.values()))[0][1].area, 6)
+            ))
         
         area_x, area_y = substrate_area[0], substrate_area[1]
         # file_name = f'{topology}_wp' if self.params.partition else topology
@@ -151,7 +170,7 @@ class BenchmarkGenerator:
         self.params.file_paths = file_paths
         self.params.file_name = file_name
 
-        """  Write the design files for placer """ 
+        """  Create the Benchmark files for placer """ 
         self.lefwriter  = LefFileWriter(self.params)
         self.defwriter  = DefFileWriter(self.params, area_x=area_x, area_y=area_y)
         self.jsonwriter = JsonFileWriter(self.params)
@@ -165,7 +184,13 @@ class BenchmarkGenerator:
         self.jsonwriter(self.db)
 
         """ Check Collision """ 
-        self.collision_checker.plot_collisions()
+        self.collision_checker.plot_collisions(suffix="_human")
+        min_bounding_rect = self.collision_checker.get_min_bounding_rect()
+        poly_area = self.collision_checker.get_total_area()
+        logging.info("Area (polygons): {} mm^2, Side Length of total area: {:.1f} mm, Area (MBR): {} mm^2".format(
+            poly_area/(self.params.scale_factor**2),
+            np.sqrt(poly_area)/self.params.scale_factor,
+            min_bounding_rect.area/(self.params.scale_factor**2)))
 
 
 if __name__ == "__main__":

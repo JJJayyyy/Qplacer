@@ -14,8 +14,8 @@ class ConnectivityGraphBuilder:
         self.debugging = debugging
         
 
-    def get_connectivity_graph(self, qubit_name='Q', scale=5):
-        if self.topology == 'new_grid':
+    def get_connectivity_graph(self, qubit_name='Q', scale=3):
+        if self.topology == 'grid':
             side = int(np.sqrt(self.qubits))
             c_graph, node_pos = self.grid_2d_graph(side, side)
         elif self.topology == 'oxtagon':
@@ -53,7 +53,8 @@ class ConnectivityGraphBuilder:
         mapping = dict()
         qubit_pos_map = dict()
         for idx, node in enumerate(c_graph.nodes()):
-            new_name = f"{qubit_name}{idx+1}"
+            # new_name = f"{qubit_name}{idx+1}"
+            new_name = f"{qubit_name}{idx}"
             mapping[node] = new_name
             qubit_pos_map[new_name] = (node_pos[node][0]*scale, node_pos[node][1]*scale)
         c_graph = nx.relabel_nodes(c_graph, mapping)
