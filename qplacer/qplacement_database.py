@@ -22,7 +22,6 @@ qubit_num_dict = {
     'xtree-53': ('xtree', 53)
 }
 
-
 class QplacementDatabase:
     def __init__(self):
         self.metal_design = designs.DesignPlanar()
@@ -67,3 +66,12 @@ class QplacementDatabase:
         state.pop('metal_design', None) 
         state.pop('qubit_to_metal_map', None)
         return state
+    
+
+
+class FrequencyDatabase:
+    def __init__(self,
+                 qubit_to_freq_map : dict, 
+                 edge_to_freq_map : dict):
+        self.qubit_to_freq_map = qubit_to_freq_map
+        self.edge_to_freq_map = edge_to_freq_map
