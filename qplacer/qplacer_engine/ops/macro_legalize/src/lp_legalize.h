@@ -142,13 +142,22 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& m
         }
     };
 
+
     auto process2Nodes = [&](int i, T xl1, T yl1, T width1, T height1, int j, T xl2, T yl2, T width2, T height2) {
         T xh1 = xl1 + width1;
         T yh1 = yl1 + height1;
         T xh2 = xl2 + width2;
         T yh2 = yl2 + height2;
+
+        
+
         T dx = std::max(xl1, xl2) - std::min(xh1, xh2);
         T dy = std::max(yl1, yl2) - std::min(yh1, yh2);
+
+        // T min_spacing = db.site_width * 2;
+        // T dx = std::max(xl1, xl2) - std::min(xh1 + min_spacing, xh2 + min_spacing);
+        // T dy = std::max(yl1, yl2) - std::min(yh1 + min_spacing, yh2 + min_spacing);
+        // std::cout << "dx: " << dx << ", min_spacing: " << min_spacing << std::endl;
 
         if (dx < 0 && dy < 0) // case I: overlap
         {
@@ -536,8 +545,10 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& m
 /// If the input macro solution is not legal, there is no guarantee to find a legal solution. 
 /// But if it is legal, the output should still be legal. 
 template <typename T>
-void lpLegalizeGraphLauncher(LegalizationDB<T> db, const std::vector<int>& macros, const std::vector<int>& fixed_macros)
-{
+void lpLegalizeGraphLauncher(LegalizationDB<T> db, 
+                            const std::vector<int>& macros, 
+                            const std::vector<int>& fixed_macros,
+                            int num_spacing){
     dreamplacePrint(kINFO, "Legalize movable macros with linear programming on constraint graphs\n");
 
     // numeric type can be int, long ,double, not never use float. 
@@ -593,6 +604,8 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db, const std::vector<int>& macro
         model_vcg.addVariable(0, db.yh, limbo::solvers::CONTINUOUS, buf);
     }
 
+    T min_spacing = num_spacing * db.site_width; /// minimum spacing
+
     for (int xy = 0; xy < 2; ++xy)
     {
         auto& model = (xy == kX)? model_hcg : model_vcg;
@@ -612,7 +625,10 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db, const std::vector<int>& macro
                 if (u < macros.size()) // u is movable macro 
                 {
                     auto var2 = model.variable(u);
-                    dreamplaceAssertMsg(model.addConstraint(var1 - var2 <= -width1), "failed to add %s constraint", (xy == kX)? "HCG" : "VCG");
+
+                    dreamplaceAssertMsg(model.addConstraint(var1 - var2 <= -(width1 + min_spacing)),
+                    "failed to add constraint between macros %d and %d", v, u); /// minimum spacing
+                    // dreamplaceAssertMsg(model.addConstraint(var1 - var2 <= -width1), "failed to add %s constraint", (xy == kX)? "HCG" : "VCG");
                 }
                 else if (u != source && u != terminal) // u is fixed cell 
                 {
@@ -707,8 +723,10 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db, const std::vector<int>& macro
 }
 
 template <typename T>
-void lpLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& macros, const std::vector<int>& fixed_macros)
-{
+void lpLegalizeLauncher(LegalizationDB<T> db, 
+        const std::vector<int>& macros, 
+        const std::vector<int>& fixed_macros,
+        int num_spacing){
     dreamplacePrint(kINFO, "Legalize movable macros with linear programming on constraint graphs\n");
 
     // numeric type can be int, long ,double, not never use float. 
@@ -758,6 +776,8 @@ void lpLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& macros, co
         model_vcg.addVariable(0, db.yh, limbo::solvers::CONTINUOUS, buf);
     }
 
+    T min_spacing = num_spacing * db.site_width; /// minimum spacing
+
     auto add2Hcg = [&](int i, T xl1, T width1, int j, T xl2, T width2){
         auto var1 = model_hcg.variable(i);
         if (j < db.num_movable_nodes) // movable macro 
@@ -765,11 +785,15 @@ void lpLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& macros, co
             auto var2 = model_hcg.variable(j);
             if (xl1 < xl2)
             {
-                dreamplaceAssertMsg(model_hcg.addConstraint(var1 - var2 <= -width1), "failed to add HCG constraint");
+                dreamplaceAssertMsg(model_hcg.addConstraint(var1 - var2 <= -(width1 + min_spacing)), 
+                "failed to add HCG constraint");    /// minimum spacing
+                // dreamplaceAssertMsg(model_hcg.addConstraint(var1 - var2 <= -width1), "failed to add HCG constraint");
             }
             else 
             {
-                dreamplaceAssertMsg(model_hcg.addConstraint(var2 - var1 <= -width2), "failed to add HCG constraint");
+                dreamplaceAssertMsg(model_hcg.addConstraint(var2 - var1 <= -(width2 + min_spacing)), 
+                "failed to add HCG constraint");    /// minimum spacing
+                // dreamplaceAssertMsg(model_hcg.addConstraint(var2 - var1 <= -width2), "failed to add HCG constraint");
             }
         }
         else // j is fixed macro 
@@ -793,11 +817,17 @@ void lpLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& macros, co
             auto var2 = model_vcg.variable(j);
             if (yl1 < yl2)
             {
-                dreamplaceAssertMsg(model_vcg.addConstraint(var1 - var2 <= -height1), "failed to add VCG constraint");
+                dreamplaceAssertMsg(model_vcg.addConstraint(var1 - var2 <= -(height1 + min_spacing)), 
+                "failed to add VCG constraint");
+                // dreamplaceAssertMsg(model_vcg.addConstraint(var1 - var2 <= -height1), 
+                // "failed to add VCG constraint");
             }
             else 
             {
-                dreamplaceAssertMsg(model_vcg.addConstraint(var2 - var1 <= -height2), "failed to add VCG constraint");
+                dreamplaceAssertMsg(model_vcg.addConstraint(var2 - var1 <= -(height2 + min_spacing)), 
+                "failed to add VCG constraint");
+                // dreamplaceAssertMsg(model_vcg.addConstraint(var2 - var1 <= -height2), 
+                // "failed to add VCG constraint");
             }
         }
         else // j is fixed macro 

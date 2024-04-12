@@ -81,6 +81,8 @@ at::Tensor macro_legalization_forward(
   return pos_copy;
 }
 
+
+
 template <typename T>
 bool check_macro_legality(LegalizationDB<T> db, const std::vector<int>& macros,
                           bool fast_check) {
@@ -93,8 +95,10 @@ bool check_macro_legality(LegalizationDB<T> db, const std::vector<int>& macros,
     T yh1 = yl1 + height1;
     T xh2 = xl2 + width2;
     T yh2 = yl2 + height2;
+  
     if (std::min(xh1, xh2) > std::max(xl1, xl2) &&
         std::min(yh1, yh2) > std::max(yl1, yl2)) {
+
       dreamplacePrint((fast_check) ? kWARN : kERROR,
                       "macro %d (%g, %g, %g, %g) var %d overlaps with macro %d "
                       "(%g, %g, %g, %g) var %d, fixed: %d\n",
@@ -157,6 +161,87 @@ bool check_macro_legality(LegalizationDB<T> db, const std::vector<int>& macros,
 
   return legal;
 }
+
+
+
+template <typename T>
+bool check_macro_legality_touch(LegalizationDB<T> db, const std::vector<int>& macros,
+                          bool fast_check) {
+  // check legality between movable and fixed macros
+  auto checkOverlap2Nodes = [&](int i, int node_id1, T xl1, T yl1, T width1,
+                                T height1, int j, int node_id2, T xl2, T yl2,
+                                T width2, T height2) {
+    T xh1 = xl1 + width1;
+    T yh1 = yl1 + height1;
+    T xh2 = xl2 + width2;
+    T yh2 = yl2 + height2;
+    
+    if (std::min(xh1, xh2) > std::max(xl1, xl2) - db.site_width &&
+        std::min(yh1, yh2) > std::max(yl1, yl2) - db.site_width) { // touch return false
+
+      dreamplacePrint((fast_check) ? kWARN : kERROR,
+                      "macro %d (%g, %g, %g, %g) var %d touches/overlaps with macro %d "
+                      "(%g, %g, %g, %g) var %d, fixed: %d\n",
+                      node_id1, xl1, yl1, xh1, yh1, i, node_id2, xl2, yl2, xh2,
+                      yh2, j, (int)(node_id2 >= db.num_movable_nodes));
+      return true;
+    }
+    return false;
+  };
+
+  bool legal = true;
+  for (unsigned int i = 0, ie = macros.size(); i < ie; ++i) {
+    int node_id1 = macros[i];
+    T xl1 = db.x[node_id1];
+    T yl1 = db.y[node_id1];
+    T width1 = db.node_size_x[node_id1];
+    T height1 = db.node_size_y[node_id1];
+    // constraints with other macros
+    for (unsigned int j = i + 1; j < ie; ++j) {
+      int node_id2 = macros[j];
+      T xl2 = db.x[node_id2];
+      T yl2 = db.y[node_id2];
+      T width2 = db.node_size_x[node_id2];
+      T height2 = db.node_size_y[node_id2];
+
+      bool overlap = checkOverlap2Nodes(i, node_id1, xl1, yl1, width1, height1,
+                                        j, node_id2, xl2, yl2, width2, height2);
+      if (overlap) {
+        legal = false;
+        if (fast_check) {
+          return legal;
+        }
+      }
+    }
+    // constraints with fixed macros
+    // when considering fixed macros, there is no guarantee to find legal
+    // solution with current ad-hoc constraint graphs
+    for (int j = db.num_movable_nodes; j < db.num_nodes; ++j) {
+      int node_id2 = j;
+      T xl2 = db.init_x[node_id2];
+      T yl2 = db.init_y[node_id2];
+      T width2 = db.node_size_x[node_id2];
+      T height2 = db.node_size_y[node_id2];
+
+      bool overlap = checkOverlap2Nodes(i, node_id1, xl1, yl1, width1, height1,
+                                        j, node_id2, xl2, yl2, width2, height2);
+      if (overlap) {
+        legal = false;
+        if (fast_check) {
+          return legal;
+        }
+      }
+    }
+  }
+  if (legal) {
+    dreamplacePrint(kDEBUG, "Macro touch-legality check [PASSED]\n");
+  } else {
+    dreamplacePrint(kERROR, "Macro touch-legality check [FAILED]\n");
+  }
+  return legal;
+}
+
+
 
 template <typename T>
 struct MacroLegalizeStats {
@@ -376,7 +461,6 @@ bool macroLegalizationLauncher(LegalizationDB<T> db) {
 #endif
     }
   }
-  dreamplacePrint(kINFO, "---------- Macro legalization ----------\n");
   dreamplacePrint(
       kINFO,
       "Macro legalization: regard %lu cells as dummy fixed (movable macros)\n",
@@ -422,58 +506,136 @@ bool macroLegalizationLauncher(LegalizationDB<T> db) {
   // first round rough legalization with Hannan grid for clusters
   bool small_clusters_flag = true;
   bool blocked_macros_flag = false;
-  roughLegalizeLauncher(db, macros, fixed_macros, small_clusters_flag,
-                        blocked_macros_flag);
-
-  // second round with LP
-  lpLegalizeGraphLauncher(db, macros, fixed_macros);
+  roughLegalizeLauncher(db, macros, fixed_macros, small_clusters_flag, blocked_macros_flag);
   auto displace = compute_displace(db, macros);
   dreamplacePrint(
-      kINFO, "Macro displacement total %g, max %g, weighted total %g, max %g\n",
+      kINFO, "Macro displacement (rough) total %g, max %g, weighted total %g, max %g\n",
       displace.total_displace, displace.max_displace,
       displace.total_weighted_displace, displace.max_weighted_displace);
-  bool legal = check_macro_legality(db, macros, true);
+      
+  // second round with LP
+  // lpLegalizeGraphLauncher(db, macros, fixed_macros, 0);
+  // displace = compute_displace(db, macros);
+  // dreamplacePrint(
+  //     kINFO, "Macro displacement (lpGraph) total %g, max %g, weighted total %g, max %g\n",
+  //     displace.total_displace, displace.max_displace,
+  //     displace.total_weighted_displace, displace.max_weighted_displace);
+  // bool legal = check_macro_legality(db, macros, true);
 
-  // try Hannan grid legalization if still not legal
-  if (!legal) {
-    legal = hannanLegalizeLauncher(db, macros, fixed_macros, 10);
+  // // try Hannan grid legalization if still not legal
+  // if (!legal) {
+  //   legal = hannanLegalizeLauncher(db, macros, fixed_macros, 10);
+  //   displace = compute_displace(db, macros);
+  //   dreamplacePrint(
+  //       kINFO,
+  //       "Macro displacement (Hannan) total %g, max %g, weighted total %g, max %g\n",
+  //       displace.total_displace, displace.max_displace,
+  //       displace.total_weighted_displace, displace.max_weighted_displace);
+  //   legal = check_macro_legality(db, macros, true);
+  //   update_best(legal, displace);
+
+  //   // refine with LP if legal
+  //   if (legal) {
+  //     lpLegalizeLauncher(db, macros, fixed_macros, 1);
+  //     displace = compute_displace(db, macros);
+  //     dreamplacePrint(
+  //         kINFO,
+  //         "Macro displacement (lp) total %g, max %g, weighted total %g, max %g\n",
+  //         displace.total_displace, displace.max_displace,
+  //         displace.total_weighted_displace, displace.max_weighted_displace);
+  //     legal = check_macro_legality(db, macros, true);
+  //     update_best(legal, displace);
+  //   }
+
+  //   // apply best solution
+  //   if (best_displace.total_displace < std::numeric_limits<T>::max()) {
+  //     dreamplacePrint(kINFO,
+  //                     "use best macro displacement total %g, max %g, weighted "
+  //                     "total %g, max %g\n",
+  //                     best_displace.total_displace, best_displace.max_displace,
+  //                     best_displace.total_weighted_displace,
+  //                     best_displace.max_weighted_displace);
+  //     for (unsigned int i = 0, ie = macros.size(); i < ie; ++i) {
+  //       int macro_id = macros[i];
+  //       db.x[macro_id] = best_x[i];
+  //       db.y[macro_id] = best_y[i];
+  //     }
+  //   }
+  // }
+
+  bool touch_legal = false;
+  bool legal = false;
+
+  // start from 2 site_width iterative minimize spacing
+  for (int num_spacing=2; num_spacing>=1; num_spacing--){
+    lpLegalizeGraphLauncher(db, macros, fixed_macros, num_spacing);
     displace = compute_displace(db, macros);
     dreamplacePrint(
-        kINFO,
-        "Macro displacement total %g, max %g, weighted total %g, max %g\n",
+        kINFO, "Macro (lpGraph) num_spacing %d, total %g, max %g, weighted total %g, max %g\n",
+        num_spacing,
         displace.total_displace, displace.max_displace,
         displace.total_weighted_displace, displace.max_weighted_displace);
-    legal = check_macro_legality(db, macros, true);
-    update_best(legal, displace);
-
-    // refine with LP if legal
-    if (legal) {
-      lpLegalizeLauncher(db, macros, fixed_macros);
-      displace = compute_displace(db, macros);
-      dreamplacePrint(
-          kINFO,
-          "Macro displacement total %g, max %g, weighted total %g, max %g\n",
-          displace.total_displace, displace.max_displace,
-          displace.total_weighted_displace, displace.max_weighted_displace);
+    legal = check_macro_legality_touch(db, macros, true);
+    if (touch_legal){
+      legal = true;
+      break;
+    } else if (num_spacing == 1 && !touch_legal){
       legal = check_macro_legality(db, macros, true);
-      update_best(legal, displace);
-    }
-
-    // apply best solution
-    if (best_displace.total_displace < std::numeric_limits<T>::max()) {
-      dreamplacePrint(kINFO,
-                      "use best macro displacement total %g, max %g, weighted "
-                      "total %g, max %g\n",
-                      best_displace.total_displace, best_displace.max_displace,
-                      best_displace.total_weighted_displace,
-                      best_displace.max_weighted_displace);
-      for (unsigned int i = 0, ie = macros.size(); i < ie; ++i) {
-        int macro_id = macros[i];
-        db.x[macro_id] = best_x[i];
-        db.y[macro_id] = best_y[i];
-      }
     }
   }
+
+  // if (!touch_legal && !legal){
+  //   std::cout << "touch_legal: " << touch_legal << ", legal: " << legal << std::endl;
+  //   // try Hannan grid legalization if still not legal
+  //   lpLegalizeGraphLauncher(db, macros, fixed_macros, 0);
+  //   displace = compute_displace(db, macros);
+  //   dreamplacePrint(
+  //       kINFO, "Macro displacement (lpGraph) total %g, max %g, weighted total %g, max %g\n",
+  //       displace.total_displace, displace.max_displace,
+  //       displace.total_weighted_displace, displace.max_weighted_displace);
+  //   legal = check_macro_legality(db, macros, true);
+
+  //   if (!legal) {
+  //     legal = hannanLegalizeLauncher(db, macros, fixed_macros, 10);
+  //     displace = compute_displace(db, macros);
+  //     dreamplacePrint(
+  //         kINFO,
+  //         "Macro displacement (Hannan) total %g, max %g, weighted total %g, max %g\n",
+  //         displace.total_displace, displace.max_displace,
+  //         displace.total_weighted_displace, displace.max_weighted_displace);
+  //     legal = check_macro_legality(db, macros, true);
+  //     update_best(legal, displace);
+
+  //     // refine with LP if legal
+  //     if (legal) {
+  //       lpLegalizeLauncher(db, macros, fixed_macros, 1);
+  //       displace = compute_displace(db, macros);
+  //       dreamplacePrint(
+  //           kINFO,
+  //           "Macro displacement (lp) total %g, max %g, weighted total %g, max %g\n",
+  //           displace.total_displace, displace.max_displace,
+  //           displace.total_weighted_displace, displace.max_weighted_displace);
+  //       legal = check_macro_legality(db, macros, true);
+  //       update_best(legal, displace);
+  //     }
+
+  //     // apply best solution
+  //     if (best_displace.total_displace < std::numeric_limits<T>::max()) {
+  //       dreamplacePrint(kINFO,
+  //                       "use best macro displacement total %g, max %g, weighted "
+  //                       "total %g, max %g\n",
+  //                       best_displace.total_displace, best_displace.max_displace,
+  //                       best_displace.total_weighted_displace,
+  //                       best_displace.max_weighted_displace);
+  //       for (unsigned int i = 0, ie = macros.size(); i < ie; ++i) {
+  //         int macro_id = macros[i];
+  //         db.x[macro_id] = best_x[i];
+  //         db.y[macro_id] = best_y[i];
+  //       }
+  //     }
+  //   }
+  // }
+    
 
   dreamplacePrint(kINFO, "Align macros to site and rows\n");
   // align the lower left corner to row and site

@@ -1,9 +1,3 @@
-##
-# @file   macro_legalize.py
-# @author Yibo Lin
-# @date   Nov 2019
-#
-
 from torch.autograd import Function
 import operators.qplacement.ops.macro_legalize.macro_legalize_cpp as macro_legalize_cpp
 
