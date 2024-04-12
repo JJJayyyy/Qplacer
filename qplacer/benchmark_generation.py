@@ -18,7 +18,7 @@ from frequency_assignment import FrequencyAssigner
 from design_format import DesignFormator
 from collision_check import FreqCollisionChecker
 from qplacement_param import QplacementParam
-from qplacement_database import QplacementDatabase
+from qplacement_database import QplacementDatabase, FrequencyDatabase
 
 from qplacer_io.lef_file_writer import LefFileWriter
 from qplacer_io.def_file_writer import DefFileWriter
@@ -37,13 +37,13 @@ logging.basicConfig(level=logging.INFO,
 
 """ parameters """
 area_dict = {
-    "grid-25": (10000, 10000),
-    "falcon": (9000,9000),
-    "hummingbird": (14000, 14000),
-    "eagle" : (19000, 19000),
-    "Aspen-11" : (12000, 12000),
-    "Aspen-M" : (18000, 18000),
-    'xtree-53' : (12000, 12000),
+    # "grid-25": (10000, 10000),
+    # "falcon": (9000,9000),
+    # "hummingbird": (14000, 14000),
+    # "eagle" : (19000, 19000),
+    # "Aspen-11" : (12000, 12000),
+    # "Aspen-M" : (18000, 18000),
+    # 'xtree-53' : (12000, 12000),
     # "grid-4": (3000, 3000),
     # "grid-64": (12900, 12900),
     # "xtree-17": (3000, 3000),
@@ -71,8 +71,13 @@ class BenchmarkGenerator:
                  suffix='wp_wf'
                  ):
         self.suffix = suffix
-        with open(bm_json, 'r') as json_file:
-            self.bm_setting = json.load(json_file)
+        if isinstance(bm_json, str):
+            with open(bm_json, 'r') as json_file:
+                self.bm_setting = json.load(json_file)
+        elif isinstance(bm_json, dict):
+            self.bm_setting = bm_json
+        else:
+            raise Exception(f"Unaccept type :{type(bm_json)}")
 
         self.debugging_dir = 'logs'
         if not os.path.isdir(self.debugging_dir):
@@ -97,9 +102,17 @@ class BenchmarkGenerator:
                                       debugging = self.bm_setting['debugging'],
                                       net_weight = self.bm_setting['net_weight'],
                                       seed = self.bm_setting['seed'],
+                                      frequency_density_weight = self.bm_setting["frequency_density_weight"],
+                                      density_weight = self.bm_setting["density_weight"],
+                                      random_center_init_flag = self.bm_setting["random_center_init_flag"],
                                       )
         self.params.debugging_dir = self.debugging_dir
         self.db = QplacementDatabase()
+        area_x, area_y = substrate_area[0], substrate_area[1]
+        # file_name = f'{topology}_wp' if self.params.partition else topology
+        # file_name = f'{file_name}_wf'if self.params.freq_assign else file_name
+        file_name = f'{topology}_{self.suffix}'
+        benchmark_dir = f"benchmarks/{self.params.benchmark_dir}/{file_name}"
         # if self.params.debugging:
         #     logging.getLogger().setLevel(logging.DEBUG)
         
@@ -151,12 +164,6 @@ class BenchmarkGenerator:
             next(iter(self.db.qubit_geo_data.values()))['geometry'].area,
             round(next(iter(self.db.wireblk_def_data.values()))[0][1].area, 6)
             ))
-        
-        area_x, area_y = substrate_area[0], substrate_area[1]
-        # file_name = f'{topology}_wp' if self.params.partition else topology
-        # file_name = f'{file_name}_wf'if self.params.freq_assign else file_name
-        file_name = f'{topology}_{self.suffix}'
-        benchmark_dir = f"benchmarks/{self.params.benchmark_dir}/{file_name}"
 
         if not os.path.isdir(benchmark_dir):
             os.makedirs(benchmark_dir, exist_ok=True)
@@ -166,6 +173,8 @@ class BenchmarkGenerator:
             "lef": f"{benchmark_dir}/{file_name}.lef",
             "def": f"{benchmark_dir}/{file_name}.def", 
             "json_dir": f'{self.params.param_json_dir}/{topology}/{self.suffix}',
+            "freq": f'{self.params.param_json_dir}/{topology}/freq_{topology}.pkl',
+            "result_def" : f"results/{file_name}/{file_name}.gp.def",
         }
         self.params.file_paths = file_paths
         self.params.file_name = file_name
@@ -184,7 +193,7 @@ class BenchmarkGenerator:
         self.jsonwriter(self.db)
 
         """ Check Collision """ 
-        self.collision_checker.plot_collisions(suffix="_human")
+        self.collision_checker.plot_collisions(suffix=f"_{self.suffix}_human")
         min_bounding_rect = self.collision_checker.get_min_bounding_rect()
         poly_area = self.collision_checker.get_total_area()
         logging.info("Area (polygons): {} mm^2, Side Length of total area: {:.1f} mm, Area (MBR): {} mm^2".format(
