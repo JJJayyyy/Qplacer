@@ -2,7 +2,10 @@ import os
 import json
 import logging
 import pickle
-import dill
+
+from qplacement_database import QplacementDatabase, FrequencyDatabase
+from qplacement_param import QplacementParam
+
 
 data_template = {
     "lef_input": [],
@@ -19,9 +22,10 @@ data_template = {
         "optimizer" : "nesterov"}
     ],
     "target_density" : 1.0,
-    "density_weight" : 8e-5,
+    "density_weight" : 8e-4,
+    #  "density_weight" : 8e-5,
     "gamma" : 4.0,
-    "random_seed" : 3,
+    "random_seed" : 100,
     "ignore_net_degree" : 100,
     "enable_fillers" : 1,
     "gp_noise_ratio" : 0.025,
@@ -30,25 +34,28 @@ data_template = {
     "stop_overflow" : 0.1,
     "dtype" : "float32",
     "plot_flag" : 1,
-    "random_center_init_flag" : 0,
+    "random_center_init_flag" : 1,
     "sort_nets_by_degree" : 0,
     "num_threads" : 8,
     "deterministic_flag" : 0,
     "frequency_assign" : 1,
     "frequency_density_weight": [],
 }
+        
 
 
 class JsonFileWriter:
     def __init__(self,
-                 params,
+                 params: QplacementParam,
                  ):
         self.data = data_template
         self.params = params
         self.data['qubit_dist_threhold'] = params.q_th*params.scale_factor      # convert to nano
         self.data['coupler_dist_threhold'] = params.res_th*params.scale_factor  # convert to nano
  
-    def __call__(self, db):
+    def __call__(self, 
+                 db: QplacementDatabase, 
+                 save_freq=True):
         assert len(db.potential_collision_map.keys()) > 0, f'potential_collision_map is empty1'
         file_name = self.params.file_name
         benchmark_dir = self.params.benchmark_dir
@@ -58,8 +65,10 @@ class JsonFileWriter:
             os.makedirs(json_dir, exist_ok=True)
             logging.info(f"The directory {json_dir} has been created.")
         
-        self.data["lef_input"] = [f"benchmarks/{benchmark_dir}/{file_name}/{file_name}.lef"]
-        self.data["def_input"] = f"benchmarks/{benchmark_dir}/{file_name}/{file_name}.def"
+        # self.data["lef_input"] = [f"benchmarks/{benchmark_dir}/{file_name}/{file_name}.lef"]
+        # self.data["def_input"] = f"benchmarks/{benchmark_dir}/{file_name}/{file_name}.def"
+        self.data["lef_input"] = [self.params.file_paths['lef']]
+        self.data["def_input"] = self.params.file_paths['def']
         json_filename = f'{json_dir}/{file_name}.json'
         
         if self.params.freq_assign:
@@ -69,31 +78,32 @@ class JsonFileWriter:
             assert len(db.wireblk_in_group) > 0
             self.data["wireblk_in_group"] = db.wireblk_in_group
             self.data["potential_collision_map"] = db.potential_collision_map
-            self.data["frequency_density_weight"] = 8e-5
-            self.data["random_center_init_flag"] = 1
+            self.data["frequency_density_weight"] = self.params.frequency_density_weight
+            self.data["density_weight"] = self.params.density_weight
+            self.data["random_center_init_flag"] = self.params.random_center_init_flag
         else:
             self.data["num_frequency_options"] = []
             self.data["frequency_density_weight"] = 0
             self.data["frequency_assign"] = 0
+            self.data["density_weight"] = self.params.density_weight
+            self.data["random_center_init_flag"] = self.params.random_center_init_flag
 
         with open(json_filename, 'w') as f:
             json.dump(self.data, f, indent=4)
             logging.info(f"Content written to {json_filename}")
 
-        # def find_non_pickleable_attributes(obj):
-        #     non_pickleable = []
-        #     for attr in dir(obj):
-        #         if not attr.startswith('__'):
-        #             try:
-        #                 pickle.dumps(getattr(obj, attr))
-        #             except (pickle.PicklingError, TypeError):
-        #                 non_pickleable.append(attr)
-        #     return non_pickleable
-        # non_pickleable_attrs = find_non_pickleable_attributes(db)
-        # print("Non-pickleable attributes:", non_pickleable_attrs)
-
         with open(f'{json_dir}/{file_name}_params.pkl', 'wb') as file:
             pickle.dump(self.params, file)
+            logging.info(f"Save params to {json_dir}/{file_name}_params.pkl")
 
         with open(f'{json_dir}/{file_name}_db.pkl', 'wb') as file:
             pickle.dump(db, file)
+            logging.info(f"Save data   to {json_dir}/{file_name}_db.pkl")
+
+        if save_freq:
+            freq_dir = self.params.file_paths["freq"]
+            freq_db = FrequencyDatabase(db.qubit_to_freq_map, db.edge_to_freq_map)
+            with open(freq_dir, 'wb') as file:
+                pickle.dump(freq_db, file)
+                logging.info(f"Save freqdb to {self.params.file_paths['freq']}")
+            
