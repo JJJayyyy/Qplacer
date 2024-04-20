@@ -1,7 +1,5 @@
 ##
 # @file   PlaceDrawer.py
-# @author Yibo Lin
-# @date   Mar 2019
 # @brief  A python implementation of placement drawer as an alternative when cairo C/C++ API is not available.
 #
 
