@@ -6,6 +6,6 @@ qiskit==0.39.0
 qiskit_ibmq_provider==0.19.2
 qiskit_metal==0.1.2
 qiskit_terra==0.25.1
-scipy==1.9.1
+scipy==1.11.1
 Shapely==1.8.5.post1
 torch==1.12.1
