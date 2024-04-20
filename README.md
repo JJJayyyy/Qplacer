@@ -90,21 +90,21 @@ Navigate to the `qplacer` directory. Execute the `compile.sh`
 
 ## Get Benchmarks
 
-To get quantum topology benchmarks, please refer the `qplacer/example.ipynb`. The benchmark files and placement configuration files will be saved in directory `qplacer/benchmark` and `qplacer/test`, respectively
+To get quantum topology benchmarks, please refer the `qplacer/qplacer_example.ipynb`. The benchmark files and placement configuration files will be saved in directory `qplacer/benchmark` and `qplacer/test`, respectively
 
 
 ## Run Placer
 
 Before running, make sure the **benchmarks** have been created and the python dependency packages/operators have been installed/built successfully.
 
-Navigate to directory `qplacer` and run `qplacer_engine/Placer.py` with JSON configuration file for full placement.
+Navigate to directory `qplacer` and run `qplacer_engine/Placer.py` with `json` configuration file for full placement.
 
 ```
 python qplacer_engine/Placer.py test/grid-25/wp_wf/grid-25_wp_wf.json
 ```
 
 ## Contact
-Junyao Zhang [Email](mailto:jz420@duke.edu), [Github issue](https://github.com/JJJayyyy/Qplacer/issues),
+Junyao Zhang [Email](mailto:jz420@duke.edu), [Github issue](https://github.com/JJJayyyy/Qplacer/issues)
 
 
 ## Citation
