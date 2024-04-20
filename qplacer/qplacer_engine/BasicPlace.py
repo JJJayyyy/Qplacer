@@ -20,8 +20,8 @@ import operators.dreamplace.ops.macro_legalize.macro_legalize as macro_legalize
 import operators.dreamplace.ops.greedy_legalize.greedy_legalize as greedy_legalize
 
 import operators.qplacement.ops.legality_check.legality_check as legality_check
-import operators.qplacement.ops.greedy_legalize.greedy_legalize as coupler_legalize
-import operators.qplacement.ops.macro_legalize.macro_legalize as qubit_legalize
+import operators.qplacement.ops.lcoupler_legalize.lcoupler_legalize as linear_coupler_legalize
+import operators.qplacement.ops.qubit_legalize.qubit_legalize as qubit_legalize
 import operators.qplacement.ops.draw_place.draw_place as draw_place
 
 
@@ -506,7 +506,7 @@ class BasicPlace(nn.Module):
         """
         # for movable macro legalization
         # the number of bins control the search granularity
-        ml = qubit_legalize.MacroLegalize(
+        ml = qubit_legalize.QubitLegalize(
             node_size_x=data_collections.node_size_x,
             node_size_y=data_collections.node_size_y,
             node_weights=data_collections.num_pins_in_nodes,
@@ -525,7 +525,7 @@ class BasicPlace(nn.Module):
             num_terminal_NIs=placedb.num_terminal_NIs,
             num_filler_nodes=placedb.num_filler_nodes)
         # for standard cell legalization
-        legalize_alg = coupler_legalize.GreedyLegalize
+        legalize_alg = linear_coupler_legalize.LcouplerLegalize
         gl = legalize_alg(
             node_size_x=data_collections.node_size_x,
             node_size_y=data_collections.node_size_y,
@@ -764,7 +764,7 @@ class BasicPlace(nn.Module):
         ### node2fence region map: movable + terminal
         node2fence_region_map = torch.zeros(num_movable_nodes_fence_region + num_terminals_fence_region, dtype=data_collections.node2fence_region_map.dtype, device=node_size_x.device).fill_(data_collections.node2fence_region_map.max().item())
 
-        ml = qubit_legalize.MacroLegalize(
+        ml = qubit_legalize.QubitLegalize(
             node_size_x=node_size_x,
             node_size_y=node_size_y,
             node_weights=num_pins_in_nodes,
@@ -783,7 +783,7 @@ class BasicPlace(nn.Module):
             num_terminal_NIs=placedb.num_terminal_NIs,
             num_filler_nodes=num_filler_nodes_fence_region)
 
-        gl = coupler_legalize.GreedyLegalize(
+        gl = linear_coupler_legalize.GreedyLegalize(
             node_size_x=node_size_x,
             node_size_y=node_size_y,
             node_weights=num_pins_in_nodes,

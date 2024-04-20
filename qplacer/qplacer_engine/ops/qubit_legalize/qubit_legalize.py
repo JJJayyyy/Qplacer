@@ -1,8 +1,8 @@
 from torch.autograd import Function
-import operators.qplacement.ops.macro_legalize.macro_legalize_cpp as macro_legalize_cpp
+import operators.qplacement.ops.qubit_legalize.qubit_legalize_cpp as qubit_legalize_cpp
 
 
-class MacroLegalizeFunction(Function):
+class QubitLegalizeFunction(Function):
     """ Legalize movable macros without considering standard cells
     """
     @staticmethod
@@ -11,7 +11,7 @@ class MacroLegalizeFunction(Function):
                 xl, yl, xh, yh, site_width, row_height, num_bins_x, num_bins_y,
                 num_movable_nodes, num_terminal_NIs, num_filler_nodes):
         if pos.is_cuda:
-            output = macro_legalize_cpp.forward(
+            output = qubit_legalize_cpp.forward(
                 init_pos.view(init_pos.numel()).cpu(),
                 pos.view(pos.numel()).cpu(), node_size_x.cpu(),
                 node_size_y.cpu(), node_weights.cpu(), flat_region_boxes.cpu(),
@@ -19,7 +19,7 @@ class MacroLegalizeFunction(Function):
                 yl, xh, yh, site_width, row_height, num_bins_x, num_bins_y,
                 num_movable_nodes, num_terminal_NIs, num_filler_nodes).cuda()
         else:
-            output = macro_legalize_cpp.forward(
+            output = qubit_legalize_cpp.forward(
                 init_pos.view(init_pos.numel()), pos.view(pos.numel()),
                 node_size_x, node_size_y, node_weights, flat_region_boxes,
                 flat_region_boxes_start, node2fence_region_map, xl, yl, xh, yh,
@@ -28,7 +28,7 @@ class MacroLegalizeFunction(Function):
         return output
 
 
-class MacroLegalize(object):
+class QubitLegalize(object):
     """ Legalize movable macros without considering standard cells
     """
     def __init__(self, node_size_x, node_size_y, node_weights,
@@ -36,7 +36,7 @@ class MacroLegalize(object):
                  node2fence_region_map, xl, yl, xh, yh, site_width, row_height,
                  num_bins_x, num_bins_y, num_movable_nodes, num_terminal_NIs,
                  num_filler_nodes):
-        super(MacroLegalize, self).__init__()
+        super(QubitLegalize, self).__init__()
         self.node_size_x = node_size_x
         self.node_size_y = node_size_y
         self.node_weights = node_weights  # node_weights of cells when computing displacement
@@ -60,7 +60,7 @@ class MacroLegalize(object):
         @param init_pos the reference position for displacement minization
         @param pos current roughly legal position
         """
-        return MacroLegalizeFunction.forward(
+        return QubitLegalizeFunction.forward(
             init_pos,
             pos,
             node_size_x=self.node_size_x,

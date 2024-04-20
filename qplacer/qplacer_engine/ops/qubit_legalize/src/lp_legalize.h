@@ -1,11 +1,5 @@
-/**
- * @file   lp_legalize.h
- * @author Yibo Lin
- * @date   Nov 2019
- */
-
-#ifndef DREAMPLACE_MACRO_LEGALIZE_LP_LEGALIZE_H
-#define DREAMPLACE_MACRO_LEGALIZE_LP_LEGALIZE_H
+#ifndef DREAMPLACE_QUBIT_LEGALIZE_LP_LEGALIZE_H
+#define DREAMPLACE_QUBIT_LEGALIZE_LP_LEGALIZE_H
 
 #include <vector>
 #include <array>
@@ -14,7 +8,7 @@
 #include <lemon/list_graph.h>
 #include <lemon/smart_graph.h>
 #include <lemon/connectivity.h>
-#include "macro_legalize/src/Util.h"
+#include "qubit_legalize/src/Util.h"
 
 DREAMPLACE_BEGIN_NAMESPACE
 
@@ -33,14 +27,14 @@ struct NodeAttribute
 };
 
 template <typename T>
-void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& macros, const std::vector<int>& fixed_macros, 
+void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& qubits, const std::vector<int>& fixed_qubits, 
         std::array<lemon::ListDigraph, 2>& cg, unsigned int& source, unsigned int& terminal)
 {
     typedef lemon::ListDigraph lemon_graph_type; 
-    unsigned int num_fixed_nodes = fixed_macros.size(); 
-    unsigned int num_graph_nodes = macros.size() + num_fixed_nodes + 2;
+    unsigned int num_fixed_nodes = fixed_qubits.size(); 
+    unsigned int num_graph_nodes = qubits.size() + num_fixed_nodes + 2;
     std::vector<NodeAttribute<T> > attribute_map (num_graph_nodes);
-    source = macros.size() + num_fixed_nodes;
+    source = qubits.size() + num_fixed_nodes;
     terminal = source + 1; 
 
     dreamplacePrint(kDEBUG, "source %u, terminal %u\n", source, terminal);
@@ -77,9 +71,9 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& m
             attr.pos[kX] = db.xh; 
             attr.pos[kY] = db.yh; 
         }
-        else if (i < macros.size()) // movable macros 
+        else if (i < qubits.size()) // movable qubits 
         {
-            int node_id = macros[i];
+            int node_id = qubits[i];
             attr.cost[kX] = db.node_size_x[node_id];
             attr.cost[kY] = db.node_size_y[node_id];
             attr.demand[kX] = std::numeric_limits<T>::lowest(); 
@@ -89,7 +83,7 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& m
             attr.pos[kX] = db.x[node_id];
             attr.pos[kY] = db.y[node_id];
 
-            // arcs between S/T and movable macros 
+            // arcs between S/T and movable qubits 
             cg[kX].addArc(cg[kX].nodeFromId(source), cg[kX].nodeFromId(i));
             cg[kY].addArc(cg[kY].nodeFromId(source), cg[kY].nodeFromId(i));
             cg[kX].addArc(cg[kX].nodeFromId(i), cg[kX].nodeFromId(terminal));
@@ -97,7 +91,7 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& m
         }
         else // fixed cells 
         {
-            int node_id = fixed_macros.at(i - macros.size()); 
+            int node_id = fixed_qubits.at(i - qubits.size()); 
             attr.cost[kX] = db.node_size_x[node_id];
             attr.cost[kY] = db.node_size_y[node_id];
             attr.demand[kX] = attr.require[kX] = db.init_x[node_id];
@@ -195,18 +189,18 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& m
 
     // construct horizontal and vertical constraint graph 
     // use current locations for constraint graphs 
-    for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+    for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
     {
-        int node_id1 = macros[i];
+        int node_id1 = qubits[i];
         T xl1 = db.x[node_id1];
         T yl1 = db.y[node_id1];
         T width1 = db.node_size_x[node_id1];
         T height1 = db.node_size_y[node_id1];
 
-        // constraints with other macros 
+        // constraints with other qubits 
         for (unsigned int j = i+1; j < ie; ++j)
         {
-            int node_id2 = macros[j];
+            int node_id2 = qubits[j];
             T xl2 = db.x[node_id2];
             T yl2 = db.y[node_id2];
             T width2 = db.node_size_x[node_id2];
@@ -214,18 +208,18 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& m
 
             process2Nodes(i, xl1, yl1, width1, height1, j, xl2, yl2, width2, height2);
         }
-        // constraints with fixed macros 
-        // when considering fixed macros, there is no guarantee to find legal solution 
+        // constraints with fixed qubits 
+        // when considering fixed qubits, there is no guarantee to find legal solution 
         // with current ad-hoc constraint graphs 
-        for (unsigned int j = 0, je = fixed_macros.size(); j < je; ++j)
+        for (unsigned int j = 0, je = fixed_qubits.size(); j < je; ++j)
         {
-            int node_id2 = fixed_macros.at(j); 
+            int node_id2 = fixed_qubits.at(j); 
             T xl2 = db.init_x[node_id2];
             T yl2 = db.init_y[node_id2];
             T width2 = db.node_size_x[node_id2];
             T height2 = db.node_size_y[node_id2];
 
-            process2Nodes(i, xl1, yl1, width1, height1, j + macros.size(), xl2, yl2, width2, height2);
+            process2Nodes(i, xl1, yl1, width1, height1, j + qubits.size(), xl2, yl2, width2, height2);
         }
     }
 
@@ -335,7 +329,7 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& m
 
 #ifdef DEBUG
     auto unset_slack = [&](){
-        for (unsigned int v = 0; v < macros.size(); ++v)
+        for (unsigned int v = 0; v < qubits.size(); ++v)
         {
             auto& attr = attribute_map.at(v);
             attr.demand[kX] = std::numeric_limits<T>::lowest();
@@ -353,7 +347,7 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& m
     auto evaluate_slack = [&](const char* msg){
         T wns[2] = {0, 0};
         T tns[2] = {0, 0};
-        for (unsigned int v = 0; v < macros.size(); ++v)
+        for (unsigned int v = 0; v < qubits.size(); ++v)
         {
             T slack[2] = {std::min(attribute_map.at(v).slack(kX), (T)0), std::min(attribute_map.at(v).slack(kY), (T)0)};
             wns[kX] = std::min(wns[kX], slack[kX]);
@@ -390,12 +384,12 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& m
     //print_slack();
     evaluate_slack("Original slack:");
 
-    std::vector<int> orders (macros.size()); 
+    std::vector<int> orders (qubits.size()); 
     std::iota(orders.begin(), orders.end(), 0);
     std::sort(orders.begin(), orders.end(), 
             [&](int i, int j){
-                int node_id1 = macros[i];
-                int node_id2 = macros[j];
+                int node_id1 = qubits[i];
+                int node_id2 = qubits[j];
                 T a1 = db.node_size_x[node_id1] * db.node_size_y[node_id1];
                 T a2 = db.node_size_x[node_id2] * db.node_size_y[node_id2];
                 T x1 = db.x[node_id1]; 
@@ -536,20 +530,21 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& m
 #endif
 }
 
-/// @brief A linear programming (LP) based algorithm to legalize macros. 
-/// It assumes the relative order of macros are determined. 
+/// @brief A linear programming (LP) based algorithm to legalize qubits. 
+/// It assumes the relative order of qubits are determined. 
 /// By constructing the horizontal and vertical constraint graph, 
 /// an optimization problem is formulated to minimize the total displacement. 
 /// The LP problem can be solved by dual min-cost flow algorithm. 
 /// 
-/// If the input macro solution is not legal, there is no guarantee to find a legal solution. 
+/// If the input qubit solution is not legal, there is no guarantee to find a legal solution. 
 /// But if it is legal, the output should still be legal. 
 template <typename T>
 void lpLegalizeGraphLauncher(LegalizationDB<T> db, 
-                            const std::vector<int>& macros, 
-                            const std::vector<int>& fixed_macros,
+                            const std::vector<int>& qubits, 
+                            const std::vector<int>& fixed_qubits,
                             int num_spacing){
-    dreamplacePrint(kINFO, "Legalize movable macros with linear programming on constraint graphs\n");
+                                
+    dreamplacePrint(kINFO, "Legalize movable qubits with linear programming on constraint graphs\n");
 
     // numeric type can be int, long ,double, not never use float. 
     // It will cause incorrect results and introduce overlap. 
@@ -563,21 +558,21 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
     std::array<lemon_graph_type, 2> cg; 
     unsigned int source = std::numeric_limits<unsigned int>::max();
     unsigned int terminal = std::numeric_limits<unsigned int>::max();
-    longestPathLegalizeLauncher(db, macros, fixed_macros, cg, source, terminal);
+    longestPathLegalizeLauncher(db, qubits, fixed_qubits, cg, source, terminal);
 
     char buf[64];
     // two linear programming models represent horizontal and vertical constraint graphs
     model_type model_hcg; 
-    model_hcg.reserveVariables(macros.size()*3); // position variables + displace variables (l, u)
+    model_hcg.reserveVariables(qubits.size()*3); // position variables + displace variables (l, u)
     typename model_type::expression_type obj_hcg; 
     model_type model_vcg; 
-    model_vcg.reserveVariables(macros.size()*3); // position variables + displace variables (l, u)
+    model_vcg.reserveVariables(qubits.size()*3); // position variables + displace variables (l, u)
     typename model_type::expression_type obj_vcg; 
 
     // position variables x
-    for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+    for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
     {
-        int node_id = macros[i];
+        int node_id = qubits[i];
         T width = db.node_size_x[node_id];
         T height = db.node_size_y[node_id];
 
@@ -586,18 +581,18 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
         model_vcg.addVariable(db.yl, db.yh-height, limbo::solvers::CONTINUOUS, buf);
     }
     // displacement variables l = min(x, x0)
-    for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+    for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
     {
-        int node_id = macros[i];
+        int node_id = qubits[i];
 
         dreamplaceSPrint(kNONE, buf, "l%d", node_id);
         model_hcg.addVariable(0, db.xh, limbo::solvers::CONTINUOUS, buf);
         model_vcg.addVariable(0, db.yh, limbo::solvers::CONTINUOUS, buf);
     }
     // displacement variables u = max(x, x0)
-    for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+    for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
     {
-        int node_id = macros[i];
+        int node_id = qubits[i];
 
         dreamplaceSPrint(kNONE, buf, "u%d", node_id);
         model_hcg.addVariable(0, db.xh, limbo::solvers::CONTINUOUS, buf);
@@ -616,34 +611,34 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
             unsigned int v = cg[xy].id(cg[xy].source(a));
             unsigned int u = cg[xy].id(cg[xy].target(a));
 
-            if (v < macros.size()) // v is movable macro
+            if (v < qubits.size()) // v is movable qubit
             {
-                int node_id1 = macros[v];
+                int node_id1 = qubits[v];
                 T width1 = db_node_size_x[node_id1];
                 auto var1 = model.variable(v);
 
-                if (u < macros.size()) // u is movable macro 
+                if (u < qubits.size()) // u is movable qubit 
                 {
                     auto var2 = model.variable(u);
 
                     dreamplaceAssertMsg(model.addConstraint(var1 - var2 <= -(width1 + min_spacing)),
-                    "failed to add constraint between macros %d and %d", v, u); /// minimum spacing
+                    "failed to add constraint between qubits %d and %d", v, u); /// minimum spacing
                     // dreamplaceAssertMsg(model.addConstraint(var1 - var2 <= -width1), "failed to add %s constraint", (xy == kX)? "HCG" : "VCG");
                 }
                 else if (u != source && u != terminal) // u is fixed cell 
                 {
-                    int node_id2 = fixed_macros.at(u - macros.size()); 
+                    int node_id2 = fixed_qubits.at(u - qubits.size()); 
                     T xl2 = db_x[node_id2];
                     model.updateVariableUpperBound(var1, floor(xl2 - width1));
                 }
             }
             else if (v != source && v != terminal) // v is fixed cell 
             {
-                int node_id1 = fixed_macros.at(v - macros.size());
+                int node_id1 = fixed_qubits.at(v - qubits.size());
                 T xl1 = db_x[node_id1];
                 T width1 = db_node_size_x[node_id1];
 
-                if (u < macros.size()) // u is movable macro 
+                if (u < qubits.size()) // u is movable qubit 
                 {
                     auto var2 = model.variable(u);
                     model.updateVariableLowerBound(var2, ceil(xl1 + width1));
@@ -654,15 +649,15 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
 
     // displacement constraints and objectives
     // Use initial locations for objective computation 
-    for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+    for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
     {
-        int node_id = macros[i];
+        int node_id = qubits[i];
         T xl = round(db.init_x[node_id]);
         T yl = round(db.init_y[node_id]);
 
         auto var_x = model_hcg.variable(i); 
-        auto var_l = model_hcg.variable(i + macros.size());
-        auto var_u = model_hcg.variable(i + macros.size()*2);
+        auto var_l = model_hcg.variable(i + qubits.size());
+        auto var_u = model_hcg.variable(i + qubits.size()*2);
         dreamplaceAssertMsg(model_hcg.addConstraint(var_l - var_x <= 0), "failed to add HCG lower bound constraint");
         model_hcg.updateVariableUpperBound(var_l, xl);
         dreamplaceAssertMsg(model_hcg.addConstraint(var_u - var_x >= 0), "failed to add HCG upper bound constraint");
@@ -670,8 +665,8 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
         obj_hcg += var_u - var_l;
 
         var_x = model_vcg.variable(i); 
-        var_l = model_vcg.variable(i + macros.size());
-        var_u = model_vcg.variable(i + macros.size()*2);
+        var_l = model_vcg.variable(i + qubits.size());
+        var_u = model_vcg.variable(i + qubits.size()*2);
         dreamplaceAssertMsg(model_vcg.addConstraint(var_l - var_x <= 0), "failed to add VCG lower bound constraint");
         model_vcg.updateVariableUpperBound(var_l, yl);
         dreamplaceAssertMsg(model_vcg.addConstraint(var_u - var_x >= 0), "failed to add VCG upper bound constraint");
@@ -696,9 +691,9 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
         auto status = solver(&alg);
         dreamplaceAssertMsg(status == limbo::solvers::OPTIMAL, "Horizontal graph not solved optimally");
 
-        for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+        for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
         {
-            int node_id = macros[i];
+            int node_id = qubits[i];
             db.x[node_id] = model_hcg.variableSolution(model_hcg.variable(i));
         }
     }
@@ -709,9 +704,9 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
         auto status = solver(&alg);
         dreamplaceAssertMsg(status == limbo::solvers::OPTIMAL, "Vertical graph not solved optimally");
 
-        for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+        for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
         {
-            int node_id = macros[i];
+            int node_id = qubits[i];
             db.y[node_id] = model_vcg.variableSolution(model_vcg.variable(i));
         }
     }
@@ -724,10 +719,10 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
 
 template <typename T>
 void lpLegalizeLauncher(LegalizationDB<T> db, 
-        const std::vector<int>& macros, 
-        const std::vector<int>& fixed_macros,
+        const std::vector<int>& qubits, 
+        const std::vector<int>& fixed_qubits,
         int num_spacing){
-    dreamplacePrint(kINFO, "Legalize movable macros with linear programming on constraint graphs\n");
+    dreamplacePrint(kINFO, "Legalize movable qubits with linear programming on constraint graphs\n");
 
     // numeric type can be int, long ,double, not never use float. 
     // It will cause incorrect results and introduce overlap. 
@@ -740,16 +735,16 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
     char buf[64];
     // two linear programming models represent horizontal and vertical constraint graphs
     model_type model_hcg; 
-    model_hcg.reserveVariables(macros.size()*3); // position variables + displace variables (l, u)
+    model_hcg.reserveVariables(qubits.size()*3); // position variables + displace variables (l, u)
     typename model_type::expression_type obj_hcg; 
     model_type model_vcg; 
-    model_vcg.reserveVariables(macros.size()*3); // position variables + displace variables (l, u)
+    model_vcg.reserveVariables(qubits.size()*3); // position variables + displace variables (l, u)
     typename model_type::expression_type obj_vcg; 
 
     // position variables x
-    for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+    for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
     {
-        int node_id = macros[i];
+        int node_id = qubits[i];
         T width = db.node_size_x[node_id];
         T height = db.node_size_y[node_id];
 
@@ -758,18 +753,18 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
         model_vcg.addVariable(db.yl, db.yh-height, limbo::solvers::CONTINUOUS, buf);
     }
     // displacement variables l = min(x, x0)
-    for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+    for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
     {
-        int node_id = macros[i];
+        int node_id = qubits[i];
 
         dreamplaceSPrint(kNONE, buf, "l%d", node_id);
         model_hcg.addVariable(0, db.xh, limbo::solvers::CONTINUOUS, buf);
         model_vcg.addVariable(0, db.yh, limbo::solvers::CONTINUOUS, buf);
     }
     // displacement variables u = max(x, x0)
-    for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+    for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
     {
-        int node_id = macros[i];
+        int node_id = qubits[i];
 
         dreamplaceSPrint(kNONE, buf, "u%d", node_id);
         model_hcg.addVariable(0, db.xh, limbo::solvers::CONTINUOUS, buf);
@@ -780,7 +775,7 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
 
     auto add2Hcg = [&](int i, T xl1, T width1, int j, T xl2, T width2){
         auto var1 = model_hcg.variable(i);
-        if (j < db.num_movable_nodes) // movable macro 
+        if (j < db.num_movable_nodes) // movable qubit 
         {
             auto var2 = model_hcg.variable(j);
             if (xl1 < xl2)
@@ -796,7 +791,7 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
                 // dreamplaceAssertMsg(model_hcg.addConstraint(var2 - var1 <= -width2), "failed to add HCG constraint");
             }
         }
-        else // j is fixed macro 
+        else // j is fixed qubit 
         {
             if (xl1 < xl2)
             {
@@ -812,7 +807,7 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
     };
     auto add2Vcg = [&](int i, T yl1, T height1, int j, T yl2, T height2){
         auto var1 = model_vcg.variable(i);
-        if (j < db.num_movable_nodes) // movable macro 
+        if (j < db.num_movable_nodes) // movable qubit 
         {
             auto var2 = model_vcg.variable(j);
             if (yl1 < yl2)
@@ -830,7 +825,7 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
                 // "failed to add VCG constraint");
             }
         }
-        else // j is fixed macro 
+        else // j is fixed qubit 
         {
             if (yl1 < yl2)
             {
@@ -889,17 +884,17 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
 
     // construct horizontal and vertical constraint graph 
     // use current locations for constraint graphs 
-    for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+    for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
     {
-        int node_id1 = macros[i];
+        int node_id1 = qubits[i];
         T xl1 = db.x[node_id1];
         T yl1 = db.y[node_id1];
         T width1 = db.node_size_x[node_id1];
         T height1 = db.node_size_y[node_id1];
-        // constraints with other macros 
+        // constraints with other qubits 
         for (unsigned int j = i+1; j < ie; ++j)
         {
-            int node_id2 = macros[j];
+            int node_id2 = qubits[j];
             T xl2 = db.x[node_id2];
             T yl2 = db.y[node_id2];
             T width2 = db.node_size_x[node_id2];
@@ -907,12 +902,12 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
 
             process2Nodes(i, xl1, yl1, width1, height1, j, xl2, yl2, width2, height2);
         }
-        // constraints with fixed macros 
-        // when considering fixed macros, there is no guarantee to find legal solution 
+        // constraints with fixed qubits 
+        // when considering fixed qubits, there is no guarantee to find legal solution 
         // with current ad-hoc constraint graphs 
-        for (unsigned int j = 0, je = fixed_macros.size(); j < je; ++j)
+        for (unsigned int j = 0, je = fixed_qubits.size(); j < je; ++j)
         {
-            int node_id2 = fixed_macros.at(j); 
+            int node_id2 = fixed_qubits.at(j); 
             T xl2 = db.init_x[node_id2];
             T yl2 = db.init_y[node_id2];
             T width2 = db.node_size_x[node_id2];
@@ -924,15 +919,15 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
 
     // displacement constraints and objectives
     // Use initial locations for objective computation 
-    for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+    for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
     {
-        int node_id = macros[i];
+        int node_id = qubits[i];
         T xl = round(db.init_x[node_id]);
         T yl = round(db.init_y[node_id]);
 
         auto var_x = model_hcg.variable(i); 
-        auto var_l = model_hcg.variable(i + macros.size());
-        auto var_u = model_hcg.variable(i + macros.size()*2);
+        auto var_l = model_hcg.variable(i + qubits.size());
+        auto var_u = model_hcg.variable(i + qubits.size()*2);
         dreamplaceAssertMsg(model_hcg.addConstraint(var_l - var_x <= 0), "failed to add HCG lower bound constraint");
         model_hcg.updateVariableUpperBound(var_l, xl);
         dreamplaceAssertMsg(model_hcg.addConstraint(var_u - var_x >= 0), "failed to add HCG upper bound constraint");
@@ -940,8 +935,8 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
         obj_hcg += var_u - var_l;
 
         var_x = model_vcg.variable(i); 
-        var_l = model_vcg.variable(i + macros.size());
-        var_u = model_vcg.variable(i + macros.size()*2);
+        var_l = model_vcg.variable(i + qubits.size());
+        var_u = model_vcg.variable(i + qubits.size()*2);
         dreamplaceAssertMsg(model_vcg.addConstraint(var_l - var_x <= 0), "failed to add VCG lower bound constraint");
         model_vcg.updateVariableUpperBound(var_l, yl);
         dreamplaceAssertMsg(model_vcg.addConstraint(var_u - var_x >= 0), "failed to add VCG upper bound constraint");
@@ -954,10 +949,10 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
     model_vcg.setObjective(obj_vcg);
     model_vcg.setOptimizeType(limbo::solvers::MIN);
 
-//#ifdef DEBUG
+// #ifdef DEBUG
     model_hcg.print("hcg.lp");
     model_vcg.print("vcg.lp");
-//#endif
+// #endif
 
     // solve linear programming for horizontal constraint graph
     {
@@ -966,9 +961,9 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
         auto status = solver(&alg);
         dreamplaceAssertMsg(status == limbo::solvers::OPTIMAL, "Horizontal graph not solved optimally");
 
-        for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+        for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
         {
-            int node_id = macros[i];
+            int node_id = qubits[i];
             db.x[node_id] = model_hcg.variableSolution(model_hcg.variable(i));
         }
     }
@@ -979,9 +974,9 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
         auto status = solver(&alg);
         dreamplaceAssertMsg(status == limbo::solvers::OPTIMAL, "Vertical graph not solved optimally");
 
-        for (unsigned int i = 0, ie = macros.size(); i < ie; ++i)
+        for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
         {
-            int node_id = macros[i];
+            int node_id = qubits[i];
             db.y[node_id] = model_vcg.variableSolution(model_vcg.variable(i));
         }
     }

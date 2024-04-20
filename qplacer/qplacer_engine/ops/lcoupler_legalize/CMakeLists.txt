@@ -1,12 +1,14 @@
-set(OP_NAME qubit_legalize)
-# set(OP_NAME macro_legalize)
+set(OP_NAME lcoupler_legalize)
 
 set(TARGET_NAME ${OP_NAME})
-set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/.. ${LIMBO_SOURCE_DIR} ${LEMON_INCLUDE_DIRS})
-set(LINK_LIBS utility_cxx lemon OpenMP::OpenMP_CXX)
+set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/..)
+set(LINK_LIBS utility_cxx OpenMP::OpenMP_CXX)
 
 add_pytorch_extension(${TARGET_NAME}_cpp 
-  src/macro_legalize.cpp
+  src/greedy_legalize.cpp
+  src/legalize_bin_cpu.cpp 
+  src/merge_bin_cpu.cpp 
+  src/greedy_legalize_cpu.cpp 
   EXTRA_INCLUDE_DIRS ${INCLUDE_DIRS}
   EXTRA_LINK_LIBRARIES ${LINK_LIBS})
 

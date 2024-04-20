@@ -1,4 +1,4 @@
-#include "greedy_legalize/src/function_cpu.h"
+#include "lcoupler_legalize/src/function_cpu.h"
 
 DREAMPLACE_BEGIN_NAMESPACE
 

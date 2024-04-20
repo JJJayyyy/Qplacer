@@ -1,7 +1,7 @@
 from torch.autograd import Function
-import operators.qplacement.ops.greedy_legalize.greedy_legalize_cpp as greedy_legalize_cpp
+import operators.qplacement.ops.lcoupler_legalize.lcoupler_legalize_cpp as lcoupler_legalize_cpp
 
-class GreedyLegalizeFunction(Function):
+class LcouplerLegalizeFunction(Function):
     """ Legalize cells with greedy approach 
     """
     @staticmethod
@@ -28,7 +28,7 @@ class GreedyLegalizeFunction(Function):
           node_in_group,
           ):
         if pos.is_cuda:
-            output = greedy_legalize_cpp.forward(
+            output = lcoupler_legalize_cpp.forward(
                     init_pos.view(init_pos.numel()).cpu(), 
                     pos.view(pos.numel()).cpu(), 
                     node_size_x.cpu(),
@@ -65,7 +65,7 @@ class GreedyLegalizeFunction(Function):
             # print(f'num_terminal_NIs: {num_terminal_NIs}')
             # print(f'num_filler_nodes: {num_filler_nodes}')
             
-            output = greedy_legalize_cpp.forward(
+            output = lcoupler_legalize_cpp.forward(
                     init_pos.view(init_pos.numel()), 
                     pos.view(pos.numel()), 
                     node_size_x,
@@ -89,14 +89,16 @@ class GreedyLegalizeFunction(Function):
                     )
         return output
 
-class GreedyLegalize(object):
+
+
+class LcouplerLegalize(object):
     """ Legalize cells with greedy approach 
     """
     def __init__(self, node_size_x, node_size_y, node_weights, 
             flat_region_boxes, flat_region_boxes_start, node2fence_region_map, 
             xl, yl, xh, yh, site_width, row_height, num_bins_x, num_bins_y, 
             num_movable_nodes, num_terminal_NIs, num_filler_nodes, node_in_group):
-        super(GreedyLegalize, self).__init__()
+        super(LcouplerLegalize, self).__init__()
         self.node_size_x = node_size_x
         self.node_size_y = node_size_y
         self.node_weights = node_weights
@@ -120,7 +122,7 @@ class GreedyLegalize(object):
         @param init_pos the reference position for displacement minization
         @param pos current roughly legal position
         """
-        return GreedyLegalizeFunction.forward(
+        return LcouplerLegalizeFunction.forward(
                 init_pos, 
                 pos,
                 node_size_x=self.node_size_x,

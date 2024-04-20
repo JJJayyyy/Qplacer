@@ -1,8 +1,3 @@
-/**
- * @file   merge_bin_cpu.h
- * @author Yibo Lin
- * @date   Oct 2018
- */
 #ifndef DREAMPLACE_MERGE_BIN_CPU_H
 #define DREAMPLACE_MERGE_BIN_CPU_H
 

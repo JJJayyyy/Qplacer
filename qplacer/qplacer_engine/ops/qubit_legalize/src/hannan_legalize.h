@@ -1,11 +1,5 @@
-/**
- * @file   hannan_legalize.h
- * @author Yibo Lin
- * @date   Nov 2019
- */
-
-#ifndef DREAMPLACE_MACRO_LEGALIZE_HANNAN_LEGALIZE_H
-#define DREAMPLACE_MACRO_LEGALIZE_HANNAN_LEGALIZE_H
+#ifndef DREAMPLACE_QUBIT_LEGALIZE_HANNAN_LEGALIZE_H
+#define DREAMPLACE_QUBIT_LEGALIZE_HANNAN_LEGALIZE_H
 
 #include <vector>
 #include <algorithm>
@@ -224,18 +218,18 @@ class HannanGridMap : public HannanGrids<T>
         std::vector<unsigned char> m_map; ///< 2D map indicating whether a grid is taken or not 
 };
 
-/// @brief A greedy macro legalization algorithm manipulating on Hannan grids. 
+/// @brief A greedy qubit legalization algorithm manipulating on Hannan grids. 
 /// The procedure of the algorithm is as follows. 
-/// For each macro: 
+/// For each qubit: 
 ///     Perfrom spiral/diamond search to the locations; 
 ///     Find the first one with minimum displacement; 
 ///     Update the grid map; 
 /// If the layout is very tight, it may not be able to find a solution. 
-/// @return true if all macros legalized 
+/// @return true if all qubits legalized 
 template <typename T>
-bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& macros, const std::vector<int>& fixed_macros, int max_iters)
+bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& qubits, const std::vector<int>& fixed_qubits, int max_iters)
 {
-    dreamplacePrint(kINFO, "Legalize movable macros on Hannan grids\n");
+    dreamplacePrint(kINFO, "Legalize movable qubits on Hannan grids\n");
 
     // count number of failures to control the order 
     std::vector<int> failure_counts (db.num_movable_nodes, 0);
@@ -247,13 +241,13 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& macros, cons
     {
         dreamplacePrint(kINFO, "Hannan round %d\n", iter);
         // copy location to working array 
-        for (auto node_id : macros)
+        for (auto node_id : qubits)
         {
             x[node_id] = db.x[node_id];
             y[node_id] = db.y[node_id];
         }
         // sort from left to right, large to small 
-        std::sort(macros.begin(), macros.end(), 
+        std::sort(qubits.begin(), qubits.end(), 
                 [&](int node_id1, int node_id2){
                     int factor1 = (1 + failure_counts[node_id1]);
                     int factor2 = (1 + failure_counts[node_id2]);
@@ -270,7 +264,7 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& macros, cons
 
         T spacing_x = std::numeric_limits<T>::max();
         T spacing_y = std::numeric_limits<T>::max();
-        for (auto node_id : macros)
+        for (auto node_id : qubits)
         {
             spacing_x = std::min(spacing_x, db.node_size_x[node_id]);
             spacing_y = std::min(spacing_y, db.node_size_y[node_id]);
@@ -281,7 +275,7 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& macros, cons
         dreamplacePrint(kDEBUG, "maximum grid spacing %gx%g, equivalent to %dx%d bins\n", 
                 (double)spacing_x, (double)spacing_y, (int)((db.xh-db.xl)/spacing_x), (int)((db.yh-db.yl)/spacing_y));
 
-        // construct hannan grid map for fixed macros 
+        // construct hannan grid map for fixed qubits 
         // collect fixed and dummy fixed nodes 
         std::vector<T> vx; 
         std::vector<T> vy; 
@@ -291,14 +285,14 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& macros, cons
         vy.reserve(db.num_nodes); 
         node_size_x.reserve(db.num_nodes);
         node_size_y.reserve(db.num_nodes);
-        for (auto node_id : fixed_macros)
+        for (auto node_id : fixed_qubits)
         {
             vx.push_back(db.x[node_id]); 
             vy.push_back(db.y[node_id]); 
             node_size_x.push_back(db.node_size_x[node_id]); 
             node_size_y.push_back(db.node_size_y[node_id]); 
         }
-        for (auto node_id : macros)
+        for (auto node_id : qubits)
         {
             vx.push_back(x[node_id]); 
             vy.push_back(y[node_id]); 
@@ -321,7 +315,7 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& macros, cons
             grid_map.set(grid_map.dim_x()-1, iy, 1);
         }
         // set fixed nodes to occupy the grid map 
-        for (auto node_id : fixed_macros)
+        for (auto node_id : fixed_qubits)
         {
             T xl = db.init_x[node_id];
             T xh = xl + db.node_size_x[node_id]; 
@@ -348,7 +342,7 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& macros, cons
         dreamplacePrint(kDEBUG, "Construct %lux%lu Hannan grids, diamond search sequence %lu\n", grid_map.dim_x(), grid_map.dim_y(), search_grids.size());
 
         legal = true; 
-        for (auto node_id : macros)
+        for (auto node_id : qubits)
         {
             T node_x = x[node_id];
             T node_y = y[node_id];
@@ -400,7 +394,7 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& macros, cons
             }
             if (!found)
             {
-                dreamplacePrint(kERROR, "failed to find legal position for macro %d (%g, %g, %g, %g)\n", 
+                dreamplacePrint(kERROR, "failed to find legal position for qubit %d (%g, %g, %g, %g)\n", 
                         node_id, node_x, node_y, node_x + width, node_y + height
                         );
                 failure_counts[node_id] += 1; 
@@ -414,7 +408,7 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& macros, cons
     }
 
     // copy solutions back 
-    for (auto node_id : macros)
+    for (auto node_id : qubits)
     {
         db.x[node_id] = x[node_id];
         db.y[node_id] = y[node_id];

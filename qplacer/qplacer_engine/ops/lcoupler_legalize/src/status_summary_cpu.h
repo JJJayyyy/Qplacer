@@ -1,8 +1,3 @@
-/**
- * @file   node_status_summary.h
- * @author Yibo Lin
- * @date   Oct 2018
- */
 #ifndef DREAMPLACE_NODE_STATUS_SUMMARY_H
 #define DREAMPLACE_NODE_STATUS_SUMMARY_H
 

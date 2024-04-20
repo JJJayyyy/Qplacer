@@ -1,8 +1,3 @@
-/**
- * @file   function_cpu.h
- * @author Yibo Lin
- * @date   Oct 2018
- */
 #ifndef DREAMPLACE_LEGALIZE_FUNCTION_CPU_H
 #define DREAMPLACE_LEGALIZE_FUNCTION_CPU_H
 
@@ -12,10 +7,10 @@
 #include "utility/src/legalization_db.h"
 #include "utility/src/make_placedb.h"
 // local dependency
-#include "greedy_legalize/src/bin_assignment_cpu.h"
-#include "greedy_legalize/src/compare_cpu.h"
-#include "greedy_legalize/src/merge_bin_cpu.h"
-#include "greedy_legalize/src/status_summary_cpu.h"
+#include "lcoupler_legalize/src/bin_assignment_cpu.h"
+#include "lcoupler_legalize/src/compare_cpu.h"
+#include "lcoupler_legalize/src/merge_bin_cpu.h"
+#include "lcoupler_legalize/src/status_summary_cpu.h"
 
 DREAMPLACE_BEGIN_NAMESPACE
 

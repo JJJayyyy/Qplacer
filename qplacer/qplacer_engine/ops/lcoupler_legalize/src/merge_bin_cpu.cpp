@@ -1,10 +1,5 @@
-/**
- * @file   merge_bin_cpu.cpp
- * @author Yibo Lin
- * @date   Oct 2018
- */
-
-#include "function_cpu.h"
+// #include "function_cpu.h"
+#include "lcoupler_legalize/src/function_cpu.h"
 
 DREAMPLACE_BEGIN_NAMESPACE
 

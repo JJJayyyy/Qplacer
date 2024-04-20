@@ -1,4 +1,5 @@
-#include "function_cpu.h"
+// #include "function_cpu.h"
+#include "lcoupler_legalize/src/function_cpu.h"
 
 DREAMPLACE_BEGIN_NAMESPACE
 
