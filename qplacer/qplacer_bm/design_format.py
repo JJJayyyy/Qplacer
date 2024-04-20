@@ -1,5 +1,11 @@
+from qiskit_metal.qlibrary import QRoute, BaseQubit
+from qiskit_metal.qlibrary.qubits.transmon_pocket import TransmonPocket
+# from Qplacer.route import PolygonConnector
+# from Qplacer.route import RouteMixed
+
 from collections import defaultdict, OrderedDict
 from shapely.geometry import Polygon, LineString
+import matplotlib.pyplot as plt
 import numpy as np
 import logging
 import random
@@ -7,16 +13,10 @@ import string
 import uuid
 import math
 import os
-from utils import create_polygon
 os.environ['QISKIT_METAL_HEADLESS'] = '1'
 
-from qiskit_metal import designs
-from qiskit_metal.qlibrary import QRoute, BaseQubit
-from qiskit_metal.qlibrary.qubits.transmon_pocket import TransmonPocket
+from qplacer_bm.utils import create_polygon
 
-# from Qplacer.route import PolygonConnector
-# from Qplacer.route import RouteMixed
-import matplotlib.pyplot as plt
 
 
 pin_to_loc = {'nw': (-1, +1), 'sw': (-1, -1), 'se': (+1, -1), 'ne': (+1, +1)}
@@ -279,7 +279,7 @@ class DesignFormator:
             raise Exception(f"Type {type(freq)} is currently not acceptable")
 
 
-    def create_pos_matrix(self, p1, p2, width, rect_w, num_poly):
+    def create_pos_matrix(self, p1, p2, width, rect_width, num_rect_w, num_poly):
         """ 
             Calculate corners of the rectangle
                     corner0 __ __  corner3
@@ -293,47 +293,59 @@ class DesignFormator:
             return [(start[0] + i * (end[0] - start[0]) / (num_points - 1), 
                      start[1] + i * (end[1] - start[1]) / (num_points - 1)) for i in range(num_points)]
         
-        assert rect_w > 0 and num_poly > 0
-        x1, y1 = p1
-        x2, y2 = p2
-        rect_l = math.ceil(num_poly / rect_w)
-        matrix = np.empty((rect_l, rect_w), dtype=object)
+        assert num_rect_w > 0 and num_poly > 0
+        tmp_x1, tmp_y1 = p1
+        tmp_x2, tmp_y2 = p2
+        if tmp_y1 > tmp_y2 or tmp_x1 > tmp_x2:
+            x1, y1 = p2
+            x2, y2 = p1
+        else:
+            x1, y1 = p1
+            x2, y2 = p2
+        rect_l = math.ceil(num_poly / num_rect_w)
+        matrix = np.empty((rect_l, num_rect_w), dtype=object)
 
         if rect_l > 1:
             angle = math.atan2(y2 - y1, x2 - x1)
             offset_x = math.sin(angle) * width/2
             offset_y = math.cos(angle) * width/2
-            length = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+            length = math.sqrt((x2 - x1)**2 + (y2 - y1)**2) - rect_width
 
             corner0 = (x1 - offset_x, y1 + offset_y)
             corner1 = (x1 + offset_x, y1 - offset_y) 
             corner2 = (corner1[0]+length*math.cos(angle), corner1[1]+length*math.sin(angle))
             corner3 = (corner0[0]+length*math.cos(angle), corner0[1]+length*math.sin(angle))
             rect_corners = [(round(x, 2), round(y, 2)) for x, y in [corner0, corner1, corner2, corner3]]
-            
-            top_edge = interpolate_points(rect_corners[0], rect_corners[1], rect_w)
-            bottom_edge = interpolate_points(rect_corners[3], rect_corners[2], rect_w)
-            left_edge = interpolate_points(top_edge[0], bottom_edge[0], rect_l)
-            right_edge = interpolate_points(top_edge[-1], bottom_edge[-1], rect_l)
+            if tmp_y1 > tmp_y2 or tmp_x1 > tmp_x2:
+                top_edge = interpolate_points(rect_corners[0], rect_corners[1], num_rect_w+1)
+                bottom_edge = interpolate_points(rect_corners[3], rect_corners[2], num_rect_w+1)
+                left_edge = interpolate_points(top_edge[0], bottom_edge[0], rect_l)
+                right_edge = interpolate_points(top_edge[-2], bottom_edge[-2], rect_l)
+            else:
+                top_edge = interpolate_points(rect_corners[0], rect_corners[1], num_rect_w+1)
+                bottom_edge = interpolate_points(rect_corners[3], rect_corners[2], num_rect_w+1)
+                left_edge = interpolate_points(top_edge[1], bottom_edge[1], rect_l)
+                right_edge = interpolate_points(top_edge[-1], bottom_edge[-1], rect_l)
+
             for i in range(rect_l):
-                matrix[i] = interpolate_points(left_edge[i], right_edge[i], rect_w)
+                matrix[i] = interpolate_points(left_edge[i], right_edge[i], num_rect_w)
         else:
             interm_pos = [(x1+(x2-x1) * (i+1) / (num_poly+1), 
                         y1+(y2-y1) * (i+1) / (num_poly+1)) for i in range(num_poly)]
             matrix[0] = interm_pos
 
         # create connections_map
-        connections_map = np.empty((rect_l, rect_w), dtype=object)
+        connections_map = np.empty((rect_l, num_rect_w), dtype=object)
         for i in range(rect_l):
             if i%2 == 0:
-                for j in range(rect_w):
+                for j in range(num_rect_w):
                     connections_map[i][j] = []
-                    if j < rect_w - 1:
+                    if j < num_rect_w - 1:
                         connections_map[i][j].append((i, j+1))
                     if i < rect_l - 1:
                         connections_map[i][j].append((i+1, j))
             else:
-                for j in range(rect_w-1, -1, -1):
+                for j in range(num_rect_w-1, -1, -1):
                     connections_map[i][j] = []
                     if j > 0:
                         connections_map[i][j].append((i, j-1))
@@ -341,12 +353,12 @@ class DesignFormator:
                         connections_map[i][j].append((i+1, j))
         
         # eliminate unused points
-        idle_pts = rect_l * rect_w - num_poly
+        idle_pts = rect_l * num_rect_w - num_poly
         first_row_idle = math.ceil(idle_pts/2)
         last_row_idle = idle_pts - first_row_idle
 
         first_node_idx = first_row_idle
-        last_node_idx = last_row_idle if (rect_l - 1) % 2 else rect_w - 1 - last_row_idle
+        last_node_idx = last_row_idle if (rect_l - 1) % 2 else num_rect_w - 1 - last_row_idle
         
         matrix[0, :first_node_idx] = None
         connections_map[0, :first_node_idx] = None
@@ -365,7 +377,7 @@ class DesignFormator:
         assert m_nan_cnt == idle_pts and cm_nan_cnt == idle_pts, \
             "m_nan_cnt:{},cm_nan_cnt:{}, idle_pts:{}, rect_l:{}, rect_w:{}, num_poly:{}\nmatrix: {}\nconnections_map: {}".format(
                 m_nan_cnt, cm_nan_cnt, idle_pts, 
-                rect_l, rect_w, num_poly, 
+                rect_l, num_rect_w, num_poly, 
                 matrix, connections_map)
 
         if self.params.graph_debugging:
@@ -407,6 +419,7 @@ class DesignFormator:
 
 
     def create_edges_def_data(self):   
+        
         def get_closest_point(pos1, pos2, qubit_size, wireblk_size):
             def normalize(vector):
                 norm = np.linalg.norm(vector)
@@ -418,8 +431,11 @@ class DesignFormator:
             pt2 = (poly2.centroid.x, poly2.centroid.y)
             direct_v1 = np.array([pt2[0] - pt1[0], pt2[1] - pt1[1]])
             direct_v2 = np.array([pt1[0] - pt2[0], pt1[1] - pt2[1]])
-            modified_pt1 = pt1 + normalize(direct_v1) * np.sqrt(2)/2 * (wireblk_size+qubit_size)
-            modified_pt2 = pt2 + normalize(direct_v2) * np.sqrt(2)/2 * (wireblk_size+qubit_size)
+            
+            # modified_pt1 = pt1 + normalize(direct_v1) * np.sqrt(2)/2 * (wireblk_size+qubit_size)
+            # modified_pt2 = pt2 + normalize(direct_v2) * np.sqrt(2)/2 * (wireblk_size+qubit_size)
+            modified_pt1 = pt1 + normalize(direct_v1) * 1/2 * (wireblk_size+qubit_size)
+            modified_pt2 = pt2 + normalize(direct_v2) * 1/2 * (wireblk_size+qubit_size)
             return modified_pt1, modified_pt2
 
         new_pin_distribution = defaultdict(list)
@@ -445,11 +461,13 @@ class DesignFormator:
                     pos_matrix, connection_map, first_node_idx, last_node_idx = self.create_pos_matrix(
                         m_pos_a, m_pos_b,
                         self.qubit_size, 
+                        self.partition_size,
                         num_pt_width, num_poly)
                 elif CONNETION_FORMAT == 'line':
                     pos_matrix, connection_map, first_node_idx, last_node_idx = self.create_pos_matrix(
                         m_pos_a, m_pos_b,
                         self.qubit_size, 
+                        self.partition_size,
                         num_poly, num_poly)
                 else:
                     raise Exception(f"CONNETION_FORMAT: {CONNETION_FORMAT} is not acceptable for now")

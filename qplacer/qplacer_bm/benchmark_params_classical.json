@@ -1,0 +1,20 @@
+{
+    "scale_factor" : 1000,
+    "q_freq_range" : [4.8, 5.2],
+    "res_freq_range" : [6, 7],
+    "q_th" : 0.1,   
+    "res_th" : 0.1,
+    "padding_size" : 0.1,
+    "partition_size" : 0.3,
+    "qubit_pad_size" : 0.4,
+    "qubit_padding_size" : 0.4,
+    "frequency_density_weight" : 9e-4,
+    "density_weight" : 8e-4,
+    "random_center_init_flag" : 1,
+    "net_weight" : 1.05,
+    "benchmark_dir" : "Qplace_benchmark",
+    "freq_assign" : false, 
+    "partition" : true,
+    "debugging" : true,
+    "seed" : 0
+}

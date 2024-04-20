@@ -9,20 +9,16 @@ import json
 import sys
 import os
 
-# root_dir = f'{os.path.dirname(os.path.dirname(os.path.abspath(__file__)))}/qplacer'
-# if root_dir not in sys.path:
-#     sys.path.append(f'{root_dir}')
+from qplacer_bm.qplacement_param import QplacementParam
+from qplacer_bm.qplacement_database import QplacementDatabase
+from qplacer_bm.connectivity import ConnectivityGraphBuilder
+from qplacer_bm.frequency_assignment import FrequencyAssigner
+from qplacer_bm.design_format import DesignFormator
+from qplacer_bm.collision_check import FreqCollisionChecker
 
-from connectivity import ConnectivityGraphBuilder
-from frequency_assignment import FrequencyAssigner
-from design_format import DesignFormator
-from collision_check import FreqCollisionChecker
-from qplacement_param import QplacementParam
-from qplacement_database import QplacementDatabase, FrequencyDatabase
-
-from qplacer_io.lef_file_writer import LefFileWriter
-from qplacer_io.def_file_writer import DefFileWriter
-from qplacer_io.json_file_writer import JsonFileWriter
+from qplacer_bm.bm_io.lef_file_writer import LefFileWriter
+from qplacer_bm.bm_io.def_file_writer import DefFileWriter
+from qplacer_bm.bm_io.json_file_writer import JsonFileWriter
 
 
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
@@ -36,20 +32,6 @@ logging.basicConfig(level=logging.INFO,
 
 
 """ parameters """
-area_dict = {
-    # "grid-25": (10000, 10000),
-    # "falcon": (9000,9000),
-    # "hummingbird": (14000, 14000),
-    # "eagle" : (19000, 19000),
-    # "Aspen-11" : (12000, 12000),
-    # "Aspen-M" : (18000, 18000),
-    # 'xtree-53' : (12000, 12000),
-    # "grid-4": (3000, 3000),
-    # "grid-64": (12900, 12900),
-    # "xtree-17": (3000, 3000),
-    # "xtree-5": (2000, 2000),
-}
-
 qubit_num_dict = {
     'grid-4': ('grid', 4), 
     'grid-25': ('grid', 25),  
@@ -109,8 +91,6 @@ class BenchmarkGenerator:
         self.params.debugging_dir = self.debugging_dir
         self.db = QplacementDatabase()
         area_x, area_y = substrate_area[0], substrate_area[1]
-        # file_name = f'{topology}_wp' if self.params.partition else topology
-        # file_name = f'{file_name}_wf'if self.params.freq_assign else file_name
         file_name = f'{topology}_{self.suffix}'
         benchmark_dir = f"benchmarks/{self.params.benchmark_dir}/{file_name}"
         # if self.params.debugging:
@@ -202,11 +182,14 @@ class BenchmarkGenerator:
             min_bounding_rect.area/(self.params.scale_factor**2)))
 
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--benchmark', default='benchmark_params.json', help='benchmark parameters json file')
     parser.add_argument('--suffix', default='', help='the suffix for experiment')
     parser.add_argument('--topology', default='grid-25', help='the connectivity topology of the design')
+    parser.add_argument('--area_x', type=int, default=10000, help='x axie size of the substrate')
+    parser.add_argument('--area_y', type=int, default=10000, help='y axie size of the substrate')
     args = parser.parse_args()
     bmg = BenchmarkGenerator(args.benchmark, suffix=args.suffix)
-    bmg(topology=args.topology, substrate_area=area_dict[args.topology])
+    bmg(topology=args.topology, substrate_area=(args.area_x, args.area_y))

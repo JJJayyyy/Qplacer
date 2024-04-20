@@ -15,11 +15,13 @@ import operators.dreamplace.ops.move_boundary.move_boundary as move_boundary
 import operators.dreamplace.ops.hpwl.hpwl as hpwl
 import operators.dreamplace.ops.pin_pos.pin_pos as pin_pos
 import operators.dreamplace.ops.pin_weight_sum.pin_weight_sum as pws
-import operators.dreamplace.ops.macro_legalize.macro_legalize as macro_legalize
 import operators.dreamplace.ops.abacus_legalize.abacus_legalize as abacus_legalize
+import operators.dreamplace.ops.macro_legalize.macro_legalize as macro_legalize
+import operators.dreamplace.ops.greedy_legalize.greedy_legalize as greedy_legalize
 
 import operators.qplacement.ops.legality_check.legality_check as legality_check
-import operators.qplacement.ops.greedy_legalize.greedy_legalize as greedy_legalize
+import operators.qplacement.ops.greedy_legalize.greedy_legalize as coupler_legalize
+import operators.qplacement.ops.macro_legalize.macro_legalize as qubit_legalize
 import operators.qplacement.ops.draw_place.draw_place as draw_place
 
 
@@ -334,8 +336,16 @@ class BasicPlace(nn.Module):
             self.op_collections.legalize_op, self.op_collections.individual_legalize_op = self.build_multi_fence_region_legalization(
             params, placedb, self.data_collections, self.device)
         else:
-            self.op_collections.legalize_op = self.build_legalization(
-            params, placedb, self.data_collections, self.device)
+            if hasattr(params, 'qplacer_legalize_flag'):
+                if params.qplacer_legalize_flag:
+                    self.op_collections.legalize_op = self.build_qplacer_legalization(
+                    params, placedb, self.data_collections, self.device)
+                else:
+                    self.op_collections.legalize_op = self.build_legalization(
+                    params, placedb, self.data_collections, self.device)
+            else:
+                self.op_collections.legalize_op = self.build_qplacer_legalization(
+                    params, placedb, self.data_collections, self.device)
         # draw placement
         self.op_collections.draw_place_op = self.build_draw_placement(params, placedb)
         # flag for rmst_wl_op # can only read once
@@ -486,7 +496,7 @@ class BasicPlace(nn.Module):
             num_movable_nodes=placedb.num_movable_nodes)
 
 
-    def build_legalization(self, params, placedb, data_collections, device):
+    def build_qplacer_legalization(self, params, placedb, data_collections, device):
         """
         @brief legalization
         @param params parameters
@@ -496,7 +506,7 @@ class BasicPlace(nn.Module):
         """
         # for movable macro legalization
         # the number of bins control the search granularity
-        ml = macro_legalize.MacroLegalize(
+        ml = qubit_legalize.MacroLegalize(
             node_size_x=data_collections.node_size_x,
             node_size_y=data_collections.node_size_y,
             node_weights=data_collections.num_pins_in_nodes,
@@ -515,7 +525,7 @@ class BasicPlace(nn.Module):
             num_terminal_NIs=placedb.num_terminal_NIs,
             num_filler_nodes=placedb.num_filler_nodes)
         # for standard cell legalization
-        legalize_alg = greedy_legalize.GreedyLegalize
+        legalize_alg = coupler_legalize.GreedyLegalize
         gl = legalize_alg(
             node_size_x=data_collections.node_size_x,
             node_size_y=data_collections.node_size_y,
@@ -537,26 +547,6 @@ class BasicPlace(nn.Module):
             num_filler_nodes=placedb.num_filler_nodes,
             node_in_group=placedb.node_in_group,
             )
-        # for standard cell legalization
-        al = abacus_legalize.AbacusLegalize(
-            node_size_x=data_collections.node_size_x,
-            node_size_y=data_collections.node_size_y,
-            node_weights=data_collections.num_pins_in_nodes,
-            flat_region_boxes=data_collections.flat_region_boxes,
-            flat_region_boxes_start=data_collections.flat_region_boxes_start,
-            node2fence_region_map=data_collections.node2fence_region_map,
-            xl=placedb.xl,
-            yl=placedb.yl,
-            xh=placedb.xh,
-            yh=placedb.yh,
-            site_width=placedb.site_width,
-            row_height=placedb.row_height,
-            num_bins_x=1,
-            num_bins_y=64,
-            #num_bins_x=64, num_bins_y=64,
-            num_movable_nodes=placedb.num_movable_nodes,
-            num_terminal_NIs=placedb.num_terminal_NIs,
-            num_filler_nodes=placedb.num_filler_nodes)
 
         def build_legalization_op(pos):
             logging.info("---------- Macro legalization  ----------")
@@ -594,6 +584,97 @@ class BasicPlace(nn.Module):
             #     return pos2            
             # return pos3
         
+        return build_legalization_op
+    
+
+    def build_legalization(self, params, placedb, data_collections, device):
+        """
+        @brief legalization
+        @param params parameters
+        @param placedb placement database
+        @param data_collections a collection of all data and variables required for constructing the ops
+        @param device cpu or cuda
+        """
+        # for movable macro legalization
+        # the number of bins control the search granularity
+        ml = macro_legalize.MacroLegalize(
+            node_size_x=data_collections.node_size_x,
+            node_size_y=data_collections.node_size_y,
+            node_weights=data_collections.num_pins_in_nodes,
+            flat_region_boxes=data_collections.flat_region_boxes,
+            flat_region_boxes_start=data_collections.flat_region_boxes_start,
+            node2fence_region_map=data_collections.node2fence_region_map,
+            xl=placedb.xl,
+            yl=placedb.yl,
+            xh=placedb.xh,
+            yh=placedb.yh,
+            site_width=placedb.site_width,
+            row_height=placedb.row_height,
+            num_bins_x=placedb.num_bins_x,
+            num_bins_y=placedb.num_bins_y,
+            num_movable_nodes=placedb.num_movable_nodes,
+            num_terminal_NIs=placedb.num_terminal_NIs,
+            num_filler_nodes=placedb.num_filler_nodes)
+        # for standard cell legalization
+        # legalize_alg = mg_legalize.MGLegalize
+        legalize_alg = greedy_legalize.GreedyLegalize
+        gl = legalize_alg(
+            node_size_x=data_collections.node_size_x,
+            node_size_y=data_collections.node_size_y,
+            node_weights=data_collections.num_pins_in_nodes,
+            flat_region_boxes=data_collections.flat_region_boxes,
+            flat_region_boxes_start=data_collections.flat_region_boxes_start,
+            node2fence_region_map=data_collections.node2fence_region_map,
+            xl=placedb.xl,
+            yl=placedb.yl,
+            xh=placedb.xh,
+            yh=placedb.yh,
+            site_width=placedb.site_width,
+            row_height=placedb.row_height,
+            num_bins_x=1,
+            num_bins_y=64,
+            #num_bins_x=64, num_bins_y=64,
+            num_movable_nodes=placedb.num_movable_nodes,
+            num_terminal_NIs=placedb.num_terminal_NIs,
+            num_filler_nodes=placedb.num_filler_nodes)
+        # for standard cell legalization
+        al = abacus_legalize.AbacusLegalize(
+            node_size_x=data_collections.node_size_x,
+            node_size_y=data_collections.node_size_y,
+            node_weights=data_collections.num_pins_in_nodes,
+            flat_region_boxes=data_collections.flat_region_boxes,
+            flat_region_boxes_start=data_collections.flat_region_boxes_start,
+            node2fence_region_map=data_collections.node2fence_region_map,
+            xl=placedb.xl,
+            yl=placedb.yl,
+            xh=placedb.xh,
+            yh=placedb.yh,
+            site_width=placedb.site_width,
+            row_height=placedb.row_height,
+            num_bins_x=1,
+            num_bins_y=64,
+            #num_bins_x=64, num_bins_y=64,
+            num_movable_nodes=placedb.num_movable_nodes,
+            num_terminal_NIs=placedb.num_terminal_NIs,
+            num_filler_nodes=placedb.num_filler_nodes)
+
+        def build_legalization_op(pos):
+            logging.info("Start legalization")
+            pos1 = ml(pos, pos)
+            pos2 = gl(pos1, pos1)
+            legal = self.op_collections.legality_check_op(pos2)
+            if not legal:
+                logging.error("legality check failed in greedy legalization, " \
+                    "return illegal results after greedy legalization.")
+                return pos2
+            pos3 = al(pos1, pos2)
+            legal = self.op_collections.legality_check_op(pos3)
+            if not legal:
+                logging.error("legality check failed in abacus legalization, " \
+                    "return legal results after greedy legalization.")
+                return pos2
+            return pos3
+
         return build_legalization_op
     
     def build_multi_fence_region_legalization(self, params, placedb, data_collections, device):
@@ -683,7 +764,7 @@ class BasicPlace(nn.Module):
         ### node2fence region map: movable + terminal
         node2fence_region_map = torch.zeros(num_movable_nodes_fence_region + num_terminals_fence_region, dtype=data_collections.node2fence_region_map.dtype, device=node_size_x.device).fill_(data_collections.node2fence_region_map.max().item())
 
-        ml = macro_legalize.MacroLegalize(
+        ml = qubit_legalize.MacroLegalize(
             node_size_x=node_size_x,
             node_size_y=node_size_y,
             node_weights=num_pins_in_nodes,
@@ -702,7 +783,7 @@ class BasicPlace(nn.Module):
             num_terminal_NIs=placedb.num_terminal_NIs,
             num_filler_nodes=num_filler_nodes_fence_region)
 
-        gl = greedy_legalize.GreedyLegalize(
+        gl = coupler_legalize.GreedyLegalize(
             node_size_x=node_size_x,
             node_size_y=node_size_y,
             node_weights=num_pins_in_nodes,

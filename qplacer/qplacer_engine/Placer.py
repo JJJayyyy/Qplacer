@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
     params.load(sys.argv[1])
     os.environ["OMP_NUM_THREADS"] = "%d" % (params.num_threads)
-
+    
     tt = time.time()
     place(params)
     logging.info("placement takes %.3f seconds" % (time.time() - tt))

@@ -82,7 +82,7 @@ class ConnectivityGraphBuilder:
 
 
 
-    def oxtagon_graph(self, cols=4, rows=2):
+    def oxtagon_graph(self, cols=4, rows=2, compact=True):
         def insert_node_in_each_edge(graph):
             original_edges = list(graph.edges())
             new_node_id = max(graph.nodes(), default=-1) + 1 
@@ -96,8 +96,22 @@ class ConnectivityGraphBuilder:
 
         G = nx.Graph()
         G.add_edges_from([(1, 2), (2, 3), (3, 4), (4, 1)])  # Create a square
-        sq_pos = {1: (0, 2), 2: (1, 0), 3: (3, 1), 4: (2, 3), 
-                    5: (0, 1), 6: (1, 3), 7: (2, 0), 8: (3, 2)}
+        """
+            Q == Q
+          //      \\
+          Q        Q        Q - Q - Q - Q
+         ||        ||   ->  |           |
+          Q        Q        Q - Q - Q - Q
+          \\      //
+            Q == Q
+        """
+        if compact:
+            sq_pos = {1: (0, 1), 2: (1, 0), 3: (3, 0), 4: (2, 1), 
+                    5: (0, 0), 6: (1, 1), 7: (2, 0), 8: (3, 1)}
+        else:
+            sq_pos = {1: (0, 2), 2: (1, 0), 3: (3, 1), 4: (2, 3), 
+                        5: (0, 1), 6: (1, 3), 7: (2, 0), 8: (3, 2)}
+        
         pos = copy.deepcopy(sq_pos)
         num_nodes_sq = len(pos)
         G = insert_node_in_each_edge(G)
@@ -118,6 +132,8 @@ class ConnectivityGraphBuilder:
 
         # vertical 
         if rows > 1:
+            if compact:
+                pos_shift = 2
             for row in range(1, rows):
                 new_positions = {max(G.nodes()) + node: (x, y-pos_shift*row) for node, (x, y) in pos.items()}
                 pos.update(new_positions)

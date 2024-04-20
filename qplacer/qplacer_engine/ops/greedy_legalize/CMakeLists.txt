@@ -1,4 +1,5 @@
-set(OP_NAME greedy_legalize)
+# set(OP_NAME greedy_legalize)
+set(OP_NAME coupler_legalize)
 
 set(TARGET_NAME ${OP_NAME})
 set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/..)

@@ -60,6 +60,7 @@ class QplacementParam:
         self.placer_dir = placer_dir
         self.file_paths = dict()
         self.file_name = "test"
+        self.debugging_dir = None
 
 
     def __getstate__(self):

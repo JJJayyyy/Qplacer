@@ -1,4 +1,5 @@
-set(OP_NAME macro_legalize)
+set(OP_NAME qubit_legalize)
+# set(OP_NAME macro_legalize)
 
 set(TARGET_NAME ${OP_NAME})
 set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/.. ${LIMBO_SOURCE_DIR} ${LEMON_INCLUDE_DIRS})
