@@ -153,6 +153,10 @@ int computeElectricForceLauncher(
     gx = 0;
     gy = 0;
     
+    // std::cout << "node_size_x: " << node_size_x << ", node_size_y: " << node_size_y << std::endl;
+    // std::cout << "node_x: " << node_x << ", node_y: " << node_y << std::endl;
+    // std::cout << "bin_index_xl: " << bin_index_xl << ", bin_index_xh: " << bin_index_xh << std::endl;
+    // std::cout << "bin_index_yl: " << bin_index_yl << ", bin_index_yh: " << bin_index_yh << std::endl;
     // update density potential map
     for (int k = bin_index_xl; k < bin_index_xh; ++k) {
       T px = triangle_density_function(node_x, node_size_x, xl, k, bin_size_x);

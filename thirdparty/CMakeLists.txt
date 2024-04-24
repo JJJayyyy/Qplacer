@@ -5,7 +5,7 @@ set(GENERATE_DOCS OFF CACHE BOOL "Turn off documentation for Limbo")
 set(ENABLE_TEST OFF CACHE BOOL "Turn off test for Limbo")
 
 
-option(INSTALL_BACKUP "Enable qplacer backup thridparty" OFF)
+option(INSTALL_BACKUP "Enable qplacer backup thridparty" ON)
 
 if(INSTALL_BACKUP)
     add_subdirectory(Limbo_qplacer_backup)
