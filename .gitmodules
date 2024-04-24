@@ -1,6 +1,3 @@
-[submodule "thirdparty/Limbo"]
-	path = thirdparty/Limbo
-	url = https://github.com/limbo018/Limbo.git
 [submodule "thirdparty/DREAMPlace"]
 	path = thirdparty/DREAMPlace
 	url = https://github.com/limbo018/DREAMPlace.git
@@ -13,3 +10,6 @@
 [submodule "thirdparty/Limbo_qplacer_backup/limbo/thirdparty/OpenBLAS"]
 	path = thirdparty/Limbo_qplacer_backup/limbo/thirdparty/OpenBLAS
 	url = https://github.com/OpenMathLib/OpenBLAS.git
+; [submodule "thirdparty/Limbo"]
+; 	path = thirdparty/Limbo
+; 	url = https://github.com/limbo018/Limbo.git
