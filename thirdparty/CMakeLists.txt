@@ -4,14 +4,11 @@ set(INSTALL_LIMBO OFF CACHE BOOL "Turn off installation for Limbo")
 set(GENERATE_DOCS OFF CACHE BOOL "Turn off documentation for Limbo")
 set(ENABLE_TEST OFF CACHE BOOL "Turn off test for Limbo")
 
-
-option(INSTALL_BACKUP "Enable qplacer backup thridparty" ON)
+add_subdirectory(Limbo_qplacer_backup)
 
 if(INSTALL_BACKUP)
-    add_subdirectory(Limbo_qplacer_backup)
     set(DREAMPLACE_OPERATIONS_BASE "DREAMPlace_qplacer_backup/dreamplace/ops")
 else()
-    add_subdirectory(Limbo)
     set(DREAMPLACE_OPERATIONS_BASE "DREAMPlace/dreamplace/ops")
 endif()
 
@@ -19,16 +16,16 @@ set(SUBDIRECTORIES
     utility
     place_io
     dct
-    pin_pos
     move_boundary
     electric_potential
     hpwl
-    weighted_average_wirelength
     logsumexp_wirelength
+    pin_pos
     pin_weight_sum
     macro_legalize
     greedy_legalize
     abacus_legalize
+    weighted_average_wirelength
 )
 
 foreach(DIR IN LISTS SUBDIRECTORIES)
