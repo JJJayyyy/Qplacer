@@ -185,20 +185,6 @@ class ElectricPotentialFunction(Function):
             # compute energy
             energy = potential_map.mul(density_map).sum()
 
-        # torch.set_printoptions(precision=10)
-        # logger.debug("initial_density_map")
-        # logger.debug(initial_density_map/(ctx.bin_size_x*ctx.bin_size_y))
-        # logger.debug("density_map")
-        # logger.debug(density_map/(ctx.bin_size_x*ctx.bin_size_y))
-        # logger.debug("auv_by_wu2_plus_wv2")
-        # logger.debug(auv_by_wu2_plus_wv2)
-        # logger.debug("potential_map")
-        # logger.debug(potential_map)
-        # logger.debug("field_map_x")
-        # logger.debug(ctx.field_map_x)
-        # logger.debug("field_map_y")
-        # logger.debug(ctx.field_map_y)
-
         #global plot_count
         # if plot_count >= 600 and plot_count % 1 == 0:
         #    logger.debug("density_map")

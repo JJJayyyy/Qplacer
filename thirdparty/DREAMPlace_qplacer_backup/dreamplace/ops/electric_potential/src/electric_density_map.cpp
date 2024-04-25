@@ -402,6 +402,4 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
         "ElectricPotential Density Map for Fixed Cells");
   m.def("electric_force", &DREAMPLACE_NAMESPACE::electric_force,
         "ElectricPotential Electric Force");
-  // m.def("freq_electric_force", &DREAMPLACE_NAMESPACE::freq_electric_force,
-  //       "ElectricPotential Frequency Electric Force");
 }

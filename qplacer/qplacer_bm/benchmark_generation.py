@@ -168,7 +168,6 @@ class BenchmarkGenerator:
 
         self.collision_checker = FreqCollisionChecker(self.params.file_paths["def"], self.params, self.db)
         self.db.potential_collision_map = self.collision_checker.build_potential_freq_collisions_map(self.db.def_nodes_order)
-        # print(f'p_collision_map : {p_collision_map}')
 
         self.jsonwriter(self.db)
 

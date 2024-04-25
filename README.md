@@ -38,31 +38,31 @@ This project is best built using a [Docker](https://hub.docker.com) container to
 
 2. **Enabling GPU Features (Optional):** For GPU support, install [NVIDIA-docker](https://github.com/NVIDIA/nvidia-docker). This step can be skipped if GPU features are not needed.
 
-3. **Clone the Repository:** You can clone the repository in one of two ways depending on your needs:
+3. **Clone the Repository:** The repository can be cloned in one of two ways:
 
    - **Full Recursive Clone:**
    This option clones the repository and all its submodules:
 
-   ```bash
-   git clone --recursive https://github.com/JJJayyyy/Qplacer.git
-   cd Qplacer
-   pip install -r requirements.txt
-   ```
+      ```bash
+      git clone --recursive https://github.com/JJJayyyy/Qplacer.git
+      cd Qplacer
+      pip install -r requirements.txt
+      ```
 
    - **Selective Submodule Clone:** 
    This option only clones the necessary submodule of the project, which can save time and disk space:
 
-   ```bash
-   git clone https://github.com/JJJayyyy/Qplacer.git
-   cd Qplacer
+      ```bash
+      git clone https://github.com/JJJayyyy/Qplacer.git
+      cd Qplacer
 
-   git submodule init thirdparty/cub
-   git submodule init thirdparty/pybind11
-   git submodule init thirdparty/Limbo_qplacer_backup/limbo/thirdparty/OpenBLAS
-   git submodule update
+      git submodule init thirdparty/cub
+      git submodule init thirdparty/pybind11
+      git submodule init thirdparty/Limbo_qplacer_backup/limbo/thirdparty/OpenBLAS
+      git submodule update
 
-   pip install -r requirements.txt
-   ```
+      pip install -r requirements.txt
+      ```
 
 4. **Build the Docker Image:** Use the following command to build the Docker image, you can replace `jz420` with your name:
 
@@ -102,11 +102,11 @@ Navigate to the `qplacer` directory to start the build process. Execute the `com
 
     - **Conditional Build Option:** If all submodules have been cloned, there is a option to use the latest operators from `DreamPlace` by executing the following command:
 
-    ```bash
-    ./compile.sh OFF
-    ```
+        ```bash
+        ./compile.sh OFF
+        ```
 
-    **Warning:** Using the latest operators may lead to compatibility issues if there are changes that are not compatible with the current state of `Qplacer`.
+    ***Warning:*** *Using the latest operators may lead to compatibility issues if there are changes that are not compatible with the current state of `Qplacer`*.
 
     `build` directory can be removed after installation if you do not need incremental compilation later. To clean, go to the root directory.
 

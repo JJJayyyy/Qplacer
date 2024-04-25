@@ -13,7 +13,6 @@ set(LINK_LIBS utility_cxx
 add_pytorch_extension(${TARGET_NAME}_cpp 
   src/electric_density_map.cpp 
   src/electric_force.cpp
-  # src/frequency_electric_force.cpp
   EXTRA_INCLUDE_DIRS ${INCLUDE_DIRS}
   EXTRA_LINK_LIBRARIES ${LINK_LIBS})
 install(TARGETS 
@@ -33,6 +32,5 @@ install(TARGETS
   DESTINATION dreamplace/ops/${OP_NAME})
 endif(TORCH_ENABLE_CUDA)
 
-# copy the python file
-# file(GLOB INSTALL_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.py)
-# install(FILES ${INSTALL_SRCS} DESTINATION dreamplace/ops/${OP_NAME})
+file(GLOB INSTALL_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.py)
+install(FILES ${INSTALL_SRCS} DESTINATION dreamplace/ops/${OP_NAME})
