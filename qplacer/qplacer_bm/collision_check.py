@@ -44,9 +44,6 @@ class FreqCollisionChecker:
                                                           def_data=self.def_data, 
                                                           partition=self.partition)
         self.all_polygons = {**self.qubit_polygons, **self.wireblk_polygons}
-        self.edges_to_poly_map = defaultdict(list)
-        for poly_name in self.wireblk_polygons.keys():
-            self.edges_to_poly_map[self.wireblk_to_edge_map[poly_name]].append(poly_name)
 
         # Frequency maps
         self.qubit_to_freq_map = db.qubit_to_freq_map
@@ -54,6 +51,10 @@ class FreqCollisionChecker:
         self.wireblk_to_freq_map = db.poly_to_freq_map
         self.wireblk_to_edge_map = db.poly_to_edge
         self.component_to_freq_map = {**self.qubit_to_freq_map, **self.wireblk_to_freq_map}
+
+        self.edges_to_poly_map = defaultdict(list)
+        for poly_name in self.wireblk_polygons.keys():
+            self.edges_to_poly_map[self.wireblk_to_edge_map[poly_name]].append(poly_name)
 
         # Hotspots
         self.total_collision_length = 0
