@@ -541,7 +541,6 @@ class BasicPlace(nn.Module):
             row_height=placedb.row_height,
             num_bins_x=1,
             num_bins_y=64,
-            #num_bins_x=64, num_bins_y=64,
             num_movable_nodes=placedb.num_movable_nodes,
             num_terminal_NIs=placedb.num_terminal_NIs,
             num_filler_nodes=placedb.num_filler_nodes,
@@ -570,21 +569,9 @@ class BasicPlace(nn.Module):
                     "return illegal results after greedy legalization.")
                 return pos2
             return pos2
-            
-            # pos3 = al(pos1, pos2)
-            # pos3_clone = pos3.clone().detach()
-            # num_diff_pos23 = torch.count_nonzero(pos2_clone - pos3_clone)
-            # logging.info(f"Number of moved node (Abacus legalization) : {num_diff_pos23}")
-            # print("-----------------------------------------------")
-
-            # legal = self.op_collections.legality_check_op(pos3)
-            # if not legal:
-            #     logging.error("legality check failed in abacus legalization, " \
-            #         "return legal results after greedy legalization.")
-            #     return pos2            
-            # return pos3
         
         return build_legalization_op
+    
     
 
     def build_legalization(self, params, placedb, data_collections, device):
@@ -616,7 +603,6 @@ class BasicPlace(nn.Module):
             num_terminal_NIs=placedb.num_terminal_NIs,
             num_filler_nodes=placedb.num_filler_nodes)
         # for standard cell legalization
-        # legalize_alg = mg_legalize.MGLegalize
         legalize_alg = greedy_legalize.GreedyLegalize
         gl = legalize_alg(
             node_size_x=data_collections.node_size_x,
@@ -653,7 +639,6 @@ class BasicPlace(nn.Module):
             row_height=placedb.row_height,
             num_bins_x=1,
             num_bins_y=64,
-            #num_bins_x=64, num_bins_y=64,
             num_movable_nodes=placedb.num_movable_nodes,
             num_terminal_NIs=placedb.num_terminal_NIs,
             num_filler_nodes=placedb.num_filler_nodes)

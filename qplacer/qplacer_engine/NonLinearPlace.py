@@ -477,29 +477,28 @@ class NonLinearPlace(BasicPlace.BasicPlace):
             cur_metric.evaluate(placedb, {"hpwl": self.op_collections.hpwl_op}, self.pos[0])
             logging.info(cur_metric)
 
-        # apply solution
-        cur_pos = self.pos[0].data.clone().cpu().numpy()
-        placedb.apply(
-            params,
-            cur_pos[0 : placedb.num_movable_nodes],
-            cur_pos[placedb.num_nodes : placedb.num_nodes + placedb.num_movable_nodes],
-        )
 
-        # dump global placement solution for legalization
-        if params.dump_global_place_solution_flag:
-            path = "%s/%s" % (params.result_dir, params.design_name())
-            if not os.path.exists(path):
-                os.system("mkdir -p %s" % (path))
-            gp_out_file = os.path.join(path, "%s.lg.%s" % (params.design_name(), params.solution_file_suffix()))
-            placedb.write(params, gp_out_file)
-            # self.dump(params, placedb, self.pos[0].cpu(), "%s.lg.pklz" % (params.design_name()))
-        # plot placement
+        # Create results directory
+        path = "%s/%s" % (params.result_dir, params.design_name())
+        if not os.path.exists(path):
+            os.system("mkdir -p %s" % (path))
+
+
+
+        # plot global placement solution
         if params.plot_flag:
             self.plot(params, placedb, iteration, self.pos[0].data.clone().cpu().numpy())
+        # apply global placement solution to placement database
+        cur_pos = self.pos[0].data.clone().cpu().numpy()
+        placedb.apply(params,
+                      cur_pos[0 : placedb.num_movable_nodes],
+                      cur_pos[placedb.num_nodes : placedb.num_nodes + placedb.num_movable_nodes],)
+        # dump global placement solution
+        if params.dump_global_place_solution_flag:
+            gp_out_file = os.path.join(path, "%s.gp.%s" % (params.design_name(), params.solution_file_suffix()))
+            placedb.write(params, gp_out_file)
 
-        '''
-         legalization
-        '''
+        ''' legalization '''
         if params.legalize_flag:
             tt = time.time()
             self.pos[0].data.copy_(self.op_collections.legalize_op(self.pos[0]))
@@ -513,14 +512,10 @@ class NonLinearPlace(BasicPlace.BasicPlace):
         # plot placement
         if params.plot_flag:
             self.plot(params, placedb, iteration, self.pos[0].data.clone().cpu().numpy())
-            
-
-        # save results and apply solution
+        # apply legalization solution
         cur_pos = self.pos[0].data.clone().cpu().numpy()
-        placedb.apply(
-            params,
-            cur_pos[0 : placedb.num_movable_nodes],
-            cur_pos[placedb.num_nodes : placedb.num_nodes + placedb.num_movable_nodes],
-        )
-
-        return all_metrics
+        placedb.apply(params,
+                      cur_pos[0 : placedb.num_movable_nodes],
+                      cur_pos[placedb.num_nodes : placedb.num_nodes + placedb.num_movable_nodes],)
+        gp_out_file = os.path.join(path, "%s.lg.%s" % (params.design_name(), params.solution_file_suffix()))
+        placedb.write(params, gp_out_file)

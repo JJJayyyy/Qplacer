@@ -16,7 +16,7 @@ if operator_module_path not in sys.path:
 import Params
 import PlaceDB
 import NonLinearPlace
-import operators.qplacement.configure
+import operators.qplacement.configure as configure
 
 
 def place(params):
@@ -39,14 +39,8 @@ def place(params):
     tt = time.time()
     placer = NonLinearPlace.NonLinearPlace(params, placedb)
     logging.info("placement initialization takes %.4f seconds" % (time.time() - tt))
-    _ = placer(params, placedb)
+    placer(params, placedb)
     logging.info("placement takes %.4f seconds" % (time.time() - tt))
-
-    path = "%s/%s" % (params.result_dir, params.design_name())
-    if not os.path.exists(path):
-        os.system("mkdir -p %s" % (path))
-    gp_out_file = os.path.join(path, "%s.gp.%s" % (params.design_name(), params.solution_file_suffix()))
-    placedb.write(params, gp_out_file)
 
 
 
