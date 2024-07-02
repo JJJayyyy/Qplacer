@@ -70,27 +70,13 @@ This project is best built using a [Docker](https://hub.docker.com) container to
    docker build . --file Dockerfile --tag jz420/qplacer:cuda
    ```
 
-5. **Launching the Container:** Depending on your setup (with or without GPU) and operating system, use one of the following commands to start the Docker container and enter its bash environment.
+5. **Launching the Container:** Depending on your setup (with or without GPU), use following command to start the Docker container and enter its bash environment.
 
    - **With GPU on Linux:**
      ```bash
-     docker run --gpus 1 -it -v $(pwd):/Qplacer jz420/qplacer:cuda bash
+     docker run --gpus 1 --name qplacer_container -it -v $(pwd):/Qplacer -w /Qplacer jz420/qplacer:cuda bash
      ```
-   
-   - **With GPU on Windows:**
-     ```bash
-     docker run --gpus 1 -it -v /Qplacer jz420/qplacer:cuda bash
-     ```
-
-   - **Without GPU on Linux:**
-     ```bash
-     docker run -it -v $(pwd):/Qplacer jz420/qplacer:cuda bash
-     ```
-
-   - **Without GPU on Windows:**
-     ```bash
-     docker run -it -v /Qplacer jz420/qplacer:cuda bash
-     ```
+        remove option `--gpus 1` to disable GPU.
 
 
 6. **Build:** 
