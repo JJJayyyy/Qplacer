@@ -11,9 +11,15 @@ RUN apt-get update \
         && apt-get install -y \
             flex \
             libcairo2-dev \
-            libboost-all-dev 
+            libboost-all-dev \
+            libkrb5-dev \
+            libgl1-mesa-glx
+
+ENV QISKIT_METAL_HEADLESS=1
 
 # Installs system dependencies from conda.
+RUN conda create -y --name env_qplacer python=3.9 pip -c conda-forge
+RUN conda init bash
 RUN conda install -y -c conda-forge bison
 
 # Installs cmake.
@@ -22,15 +28,3 @@ RUN mkdir /opt/cmake \
         && sh /cmake-3.21.0-linux-x86_64.sh --prefix=/opt/cmake --skip-license \
         && ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake \
         && cmake --version
-
-# Installs python dependencies. 
-RUN pip install \
-        pyunpack>=0.1.2 \
-        patool>=1.12 \
-        matplotlib>=2.2.2 \
-        cairocffi>=0.9.0 \
-        pkgconfig>=1.4.0 \
-        setuptools>=39.1.0 \
-        scipy>=1.1.0 \
-        numpy>=1.24.4 \
-        shapely>=1.7.0 \
