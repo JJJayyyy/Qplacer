@@ -75,7 +75,7 @@ This project is best built using a [Docker](https://hub.docker.com) container to
      ```
         remove option `--gpus 1` to disable GPU.
 
-6. **Build:** 
+6. **Setup Environment:** 
 To set up the necessary environment and install the required packages:
 
    Activate the `qplacer_env` environment:
