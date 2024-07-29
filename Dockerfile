@@ -18,7 +18,7 @@ RUN apt-get update \
 ENV QISKIT_METAL_HEADLESS=1
 
 # Installs system dependencies from conda.
-RUN conda create -y --name env_qplacer python=3.9 pip -c conda-forge
+RUN conda create -y --name qplacer_env python=3.9 pip -c conda-forge
 RUN conda init bash
 RUN conda install -y -c conda-forge bison
 

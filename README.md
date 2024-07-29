@@ -46,7 +46,6 @@ This project is best built using a [Docker](https://hub.docker.com) container to
       ```bash
       git clone --recursive https://github.com/JJJayyyy/Qplacer.git
       cd Qplacer
-      pip install -r requirements.txt
       ```
 
    - **Selective Submodule Clone:** 
@@ -60,8 +59,6 @@ This project is best built using a [Docker](https://hub.docker.com) container to
       git submodule init thirdparty/pybind11
       git submodule init thirdparty/Limbo_qplacer_backup/limbo/thirdparty/OpenBLAS
       git submodule update
-
-      pip install -r requirements.txt
       ```
 
 4. **Build the Docker Image:** Use the following command to build the Docker image, you can replace `jz420` with your name:
@@ -78,8 +75,20 @@ This project is best built using a [Docker](https://hub.docker.com) container to
      ```
         remove option `--gpus 1` to disable GPU.
 
-
 6. **Build:** 
+To set up the necessary environment and install the required packages:
+
+   Activate the `qplacer_env` environment:
+   ```bash
+   conda activate qplacer_env
+   ```
+
+   Install all the dependencies listed in the `requirements.txt` file:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+7. **Build:** 
 Navigate to the `qplacer` directory to start the build process. Execute the `compile.sh` script:
     ```
     ./compile.sh
