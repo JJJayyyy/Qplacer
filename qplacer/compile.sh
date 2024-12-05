@@ -22,7 +22,6 @@ fi
 cmake .. -DCMAKE_INSTALL_PREFIX="${DEST_DIR}/operators" -DINSTALL_BACKUP=${INSTALL_BACKUP}
 echo "Compiling with ${NUM_CORES} cores..."
 make -j"${NUM_CORES}"
-# make
 make install
 
 cd "${DEST_DIR}"

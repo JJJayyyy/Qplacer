@@ -22,9 +22,6 @@ set(SUBDIRECTORIES
     logsumexp_wirelength
     pin_pos
     pin_weight_sum
-    macro_legalize
-    greedy_legalize
-    abacus_legalize
     weighted_average_wirelength
 )
 
