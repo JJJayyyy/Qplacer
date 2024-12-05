@@ -1,19 +1,13 @@
-/**
- * @file   legality_check.h
- * @author Yibo Lin
- * @date   Oct 2018
- */
-
-#ifndef DREAMPLACE_LEGALITY_CHECK_H
-#define DREAMPLACE_LEGALITY_CHECK_H
+#ifndef QPLACER_LEGALITY_CHECK_H
+#define QPLACER_LEGALITY_CHECK_H
 
 #include <algorithm>
-#include <cassert>
+// #include <cassert>
 #include <iostream>
 #include <vector>
 #include "utility/src/utils.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 /// compare nodes with x center
 /// resolve ambiguity by index
@@ -46,7 +40,7 @@ bool boundaryCheck(const T* x, const T* y, const T* node_size_x,
     T node_xh = node_xl + node_size_x[i];
     T node_yh = node_yl + node_size_y[i];
     if (node_xl + precision < xl || node_xh > xh + precision || node_yl + precision < yl || node_yh > yh + precision) {
-      dreamplacePrint(kDEBUG, "node %d (%g, %g, %g, %g) out of boundary\n", i,
+      qplacerPrint(kDEBUG, "node %d (%g, %g, %g, %g) out of boundary\n", i,
                       node_xl, node_yl, node_xh, node_yh);
       legal_flag = false;
     }
@@ -72,7 +66,7 @@ bool siteAlignmentCheck(const T* x, const T* y, const T site_width,
     T row_yh = row_yl + row_height;
 
     if (std::abs(row_id_f - row_id) > precision) {
-      dreamplacePrint(
+      qplacerPrint(
           kERROR,
           "node %d (%g, %g) failed to align to row %d (%g, %g), gap %g\n", i,
           node_xl, node_yl, row_id, row_yl, row_yh, std::abs(node_yl - row_yl));
@@ -82,7 +76,7 @@ bool siteAlignmentCheck(const T* x, const T* y, const T site_width,
     T site_id_f = (node_xl - xl) / site_width;
     int site_id = floorDiv(node_xl - xl, site_width);
     if (std::abs(site_id_f - site_id) > precision) {
-      dreamplacePrint(
+      qplacerPrint(
           kERROR,
           "node %d (%g, %g) failed to align to row %d (%g, %g) and site\n", i,
           node_xl, node_yl, row_id, row_yl, row_yh);
@@ -132,7 +126,7 @@ bool fenceRegionCheck(const T* node_size_x, const T* node_size_y,
       }
       if (node_area > 0)  // not consumed by boxes within a region
       {
-        dreamplacePrint(kERROR,
+        qplacerPrint(kERROR,
                         "node %d (%g, %g, %g, %g), out of fence region %d", i,
                         node_xl, node_yl, node_xh, node_yh, region_id);
         for (int box_id = box_bgn; box_id < box_end; ++box_id) {
@@ -142,10 +136,10 @@ bool fenceRegionCheck(const T* node_size_x, const T* node_size_y,
           T box_xh = flat_region_boxes[box_offset + 2];
           T box_yh = flat_region_boxes[box_offset + 3];
 
-          dreamplacePrint(kNONE, " (%g, %g, %g, %g)", box_xl, box_yl, box_xh,
+          qplacerPrint(kNONE, " (%g, %g, %g, %g)", box_xl, box_yl, box_xh,
                           box_yh);
         }
-        dreamplacePrint(kNONE, "\n");
+        qplacerPrint(kNONE, "\n");
         legal_flag = false;
       }
     }
@@ -159,7 +153,7 @@ bool overlapCheck(const T* node_size_x, const T* node_size_y, const T* x,
                   T yh, const int num_nodes, const int num_movable_nodes) {
   bool legal_flag = true;
   int num_rows = ceilDiv(yh - yl, row_height);
-  dreamplaceAssert(num_rows > 0);
+  qplacerAssert(num_rows > 0);
   std::vector<std::vector<int> > row_nodes(num_rows);
 
   // general to node and fixed boxes
@@ -268,7 +262,7 @@ bool overlapCheck(const T* node_size_x, const T* node_size_y, const T* x,
           // original criteria: scaleBack2Integer(prev_xh) > scaleBack2Integer(cur_xl)
           // the floating point comparison may introduce incorrect result
           if (prev_site_xh > cur_site_xl) {
-            dreamplacePrint(
+            qplacerPrint(
                 kERROR,
                 "row %d (%g, %g), overlap node %d (%g, %g, %g, %g) with "
                 "node %d (%g, %g, %g, %g) site (%d, %d), gap %g\n",
@@ -297,7 +291,7 @@ bool legalityCheckKernelCPU(const T* x, const T* y, const T* node_size_x,
                             const int num_regions) {
   bool legal_flag = true;
   int num_rows = ceil((yh - yl) / row_height);
-  dreamplaceAssert(num_rows > 0);
+  qplacerAssert(num_rows > 0);
   fflush(stdout);
   std::vector<std::vector<int> > row_nodes(num_rows);
 
@@ -400,7 +394,7 @@ bool legalityCheckSiteMapKernelCPU(const T* init_x, const T* init_y,
             node_yh > site_yl)  // overlap
         {
           if (site_map[iy][ix]) {
-            dreamplacePrint(kERROR,
+            qplacerPrint(kERROR,
                             "detect overlap at site (%g, %g, %g, %g) for node "
                             "%d (%g, %g, %g, %g)\n",
                             site_xl, site_yl, site_xh, site_yh, i, node_xl,
@@ -416,6 +410,6 @@ bool legalityCheckSiteMapKernelCPU(const T* init_x, const T* init_y,
   return legal_flag;
 }
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

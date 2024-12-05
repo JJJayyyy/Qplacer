@@ -1,12 +1,6 @@
-/*************************************************************************
-    > File Name: util.h
-    > Author: Yibo Lin
-    > Mail: yibolin@utexas.edu
-    > Created Time: Sun 14 Jun 2015 04:08:18 PM CDT
- ************************************************************************/
 
-#ifndef DREAMPLACE_UTIL_H
-#define DREAMPLACE_UTIL_H
+#ifndef QPLACER_UTIL_H
+#define QPLACER_UTIL_H
 
 #include <limbo/string/String.h>
 #include <cstring>
@@ -17,11 +11,11 @@
 /// headers for hash tables
 #include <unordered_map>
 #include <unordered_set>
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 namespace hashspace = std;
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 enum Direction1DType {
   kLOW = 0,
@@ -192,6 +186,6 @@ class WildcardMatch {
   std::size_t m_m;                      /// < length of pattern
 };
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

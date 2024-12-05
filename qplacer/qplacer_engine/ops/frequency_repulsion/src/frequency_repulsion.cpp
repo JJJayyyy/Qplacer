@@ -4,7 +4,7 @@
 #include <vector>
 
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 template <typename T>
 void computeRepulsionForceLauncher(
@@ -46,25 +46,24 @@ at::Tensor frequency_repulsion(
 
     at::Tensor energy = at::zeros_like(pos);
 
-    DREAMPLACE_DISPATCH_FLOATING_TYPES(pos, "computeRepulsionForceLauncher", [&] {
-        computeRepulsionForceLauncher<scalar_t>(
-            DREAMPLACE_TENSOR_DATA_PTR(pos, scalar_t),
-            DREAMPLACE_TENSOR_DATA_PTR(node_size_x, scalar_t),
-            DREAMPLACE_TENSOR_DATA_PTR(node_size_y, scalar_t),
+    QPLACER_DISPATCH_FLOATING_TYPES(pos, "computeRepulsionForceLauncher", [&] {
+        QPLACER_NAMESPACE::computeRepulsionForceLauncher<scalar_t>(
+            QPLACER_TENSOR_DATA_PTR(pos, scalar_t),
+            QPLACER_TENSOR_DATA_PTR(node_size_x, scalar_t),
+            QPLACER_TENSOR_DATA_PTR(node_size_y, scalar_t),
             potential_collision_map,
             epsilon, qubit_dist_threshold_x, qubit_dist_threshold_y, force_ratio,
             num_nodes,
-            DREAMPLACE_TENSOR_DATA_PTR(energy, scalar_t));
+            QPLACER_TENSOR_DATA_PTR(energy, scalar_t));
     });
 
     return energy;
 }
 
-DREAMPLACE_END_NAMESPACE
-
+QPLACER_END_NAMESPACE
 
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("frequency_repulsion", &DREAMPLACE_NAMESPACE::frequency_repulsion,
+    m.def("frequency_repulsion", &QPLACER_NAMESPACE::frequency_repulsion,
         "Frequency Electric Force");
 }

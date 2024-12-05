@@ -1,34 +1,29 @@
-/**
- * @file   defs.h
- * @author Yibo Lin
- * @date   Apr 2020
- */
-#ifndef _DREAMPLACE_UTILITY_DEFS_H
-#define _DREAMPLACE_UTILITY_DEFS_H
+#ifndef _QPLACER_UTILITY_DEFS_H
+#define _QPLACER_UTILITY_DEFS_H
 
 #include "utility/src/namespace.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 #ifndef __NVCC__
 
 /// namespace definition to make functions like
 /// min/max general between C++ and CUDA
-#define DREAMPLACE_STD_NAMESPACE std
+#define QPLACER_STD_NAMESPACE std
 /// namespace definition to make functions
 /// general between C++ and CUDA
-#define DREAMPLACE_HOST_DEVICE
+#define QPLACER_HOST_DEVICE
 
 #else
 
-#define DREAMPLACE_STD_NAMESPACE
-#define DREAMPLACE_HOST_DEVICE __host__ __device__
+#define QPLACER_STD_NAMESPACE
+#define QPLACER_HOST_DEVICE __host__ __device__
 
 #define allocateCUDA(var, size, type)                               \
   {                                                                 \
     cudaError_t status = cudaMalloc(&(var), (size) * sizeof(type)); \
     if (status != cudaSuccess) {                                    \
-      dreamplacePrint(kERROR, "cudaMalloc failed for " #var "\n");  \
+      qplacerPrint(kERROR, "cudaMalloc failed for " #var "\n");  \
     }                                                               \
   }
 
@@ -36,13 +31,13 @@ DREAMPLACE_BEGIN_NAMESPACE
   {                                                              \
     cudaError_t status = cudaFree(var);                          \
     if (status != cudaSuccess) {                                 \
-      dreamplacePrint(kERROR, "cudaFree failed for " #var "\n"); \
+      qplacerPrint(kERROR, "cudaFree failed for " #var "\n"); \
     }                                                            \
   }
 
 #define checkCUDA(status)                                                  \
   {                                                                        \
-    dreamplaceAssertMsg(status == cudaSuccess, "CUDA Runtime Error: %s\n", \
+    qplacerAssertMsg(status == cudaSuccess, "CUDA Runtime Error: %s\n", \
                         cudaGetErrorString(status));                       \
   }
 
@@ -54,7 +49,7 @@ DREAMPLACE_BEGIN_NAMESPACE
   }
 
 #define checkCURAND(x) \
-  { dreamplaceAssert(x == CURAND_STATUS_SUCCESS); }
+  { qplacerAssert(x == CURAND_STATUS_SUCCESS); }
 
 #define allocateCopyCPU(var, rhs, size, T)                           \
   {                                                                  \
@@ -73,6 +68,6 @@ DREAMPLACE_BEGIN_NAMESPACE
 /// macros.
 #define DUMMY_FIXED_NUM_ROWS 2
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

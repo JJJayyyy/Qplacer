@@ -13,9 +13,6 @@ from torch.nn import functional as F
 import logging
 
 import operators.qplacement.ops.frequency_repulsion.frequency_repulsion_cpp as frequency_repulsion_cpp
-import operators.dreamplace.configure as configure
-# if configure.compile_configurations["CUDA_FOUND"] == "TRUE":
-#     import operator.qplacement.ops.frequency_repulsion.frequency_repulsion_cuda as frequency_repulsion_cuda
 
 
 logger = logging.getLogger(__name__)

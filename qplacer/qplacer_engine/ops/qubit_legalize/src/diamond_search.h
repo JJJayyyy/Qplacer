@@ -1,10 +1,6 @@
-/**
- * @file   diamond_search.h
- * @author Yibo Lin
- * @date   Jan 2019
- */
-#ifndef _DREAMPLACE_GLOBAL_MOVE_DIAMOND_SEARCH_H
-#define _DREAMPLACE_GLOBAL_MOVE_DIAMOND_SEARCH_H
+
+#ifndef _QPLACER_GLOBAL_MOVE_DIAMOND_SEARCH_H
+#define _QPLACER_GLOBAL_MOVE_DIAMOND_SEARCH_H
 
 #include <algorithm>
 #include <cmath>
@@ -16,7 +12,7 @@
 #include <vector>
 #include "utility/src/msg.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 /// @brief grid index
 template <typename T>
@@ -136,6 +132,6 @@ void diamond_search_print(const std::vector<GridIndex<T> >& grid_sequence) {
   printf("\n");
 }
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

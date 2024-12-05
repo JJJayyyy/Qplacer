@@ -2,7 +2,7 @@ set(OP_NAME qubit_legalize)
 
 set(TARGET_NAME ${OP_NAME})
 set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/.. ${LIMBO_SOURCE_DIR} ${LEMON_INCLUDE_DIRS})
-set(LINK_LIBS utility_cxx lemon OpenMP::OpenMP_CXX)
+set(LINK_LIBS qplacer_utility_cxx lemon OpenMP::OpenMP_CXX)
 
 add_pytorch_extension(${TARGET_NAME}_cpp 
   src/qubit_legalize.cpp

@@ -1,6 +1,7 @@
 #include "lcoupler_legalize/src/function_cpu.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
+
 
 /// @brief legalize layout with greedy legalization.
 /// Only movable nodes will be moved. Fixed nodes and filler nodes are fixed.
@@ -64,7 +65,7 @@ at::Tensor greedy_legalization_forward(
 	CPUTimer::hr_clock_rep timer_start, timer_stop;
 	timer_start = CPUTimer::getGlobaltime();
 	// Call the cuda kernel launcher
-	DREAMPLACE_DISPATCH_FLOATING_TYPES(
+	QPLACER_DISPATCH_FLOATING_TYPES(
 		pos, "greedyLegalizationLauncher", [&] {
 			auto db = make_placedb<scalar_t>(
 				init_pos, pos_copy, node_size_x, node_size_y, node_weights,
@@ -76,15 +77,15 @@ at::Tensor greedy_legalization_forward(
 			// db.check_legality();
 		});
 	timer_stop = CPUTimer::getGlobaltime();
-	dreamplacePrint(kINFO, "Greedy legalization takes %g ms\n",
+	qplacerPrint(kINFO, "Greedy legalization takes %g ms\n",
 					(timer_stop - timer_start) * CPUTimer::getTimerPeriod());
 	return pos_copy;
 }
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("forward", &DREAMPLACE_NAMESPACE::greedy_legalization_forward,
+  m.def("forward", &QPLACER_NAMESPACE::greedy_legalization_forward,
         "Greedy legalization forward");
 }

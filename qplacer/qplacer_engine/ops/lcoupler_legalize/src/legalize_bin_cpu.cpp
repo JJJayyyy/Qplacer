@@ -1,7 +1,7 @@
 // #include "function_cpu.h"
 #include "lcoupler_legalize/src/function_cpu.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 
 template <typename T>
@@ -92,7 +92,7 @@ void updateTouchedBlanksCPU(
                 } else {
                     std::cout << "new_blank.xl: " << new_blank.xl << ", new_blank.xh: " << new_blank.xh 
                     << " | blk.xl: " << blk.xl << ", blk.xh: " << blk.xh << std::endl;
-                    dreamplaceAssert(false);
+                    qplacerAssert(false);
                 }
             }
 
@@ -115,8 +115,8 @@ void updateTouchedBlanksCPU(
     //             std::cout << blank_.toString() << " ";
     //             std::cout << " xl: " << xl << ", blank.xl: " << int(blank_.xl) 
     //                 << ", (xl <= blank.xl): " << (xl <= int(blank_.xl));
-    //             // dreamplaceAssertMsg(xl <= blank.xl, "xl: %d, blank.xl: %d", xl, int(blank.xl));
-    //             // dreamplaceAssertMsg(blank.xl < blank.xh, "blank.xl: %g, blank.xh: %g", blank.xl, blank.xh);
+    //             // qplacerAssertMsg(xl <= blank.xl, "xl: %d, blank.xl: %d", xl, int(blank.xl));
+    //             // qplacerAssertMsg(blank.xl < blank.xh, "blank.xl: %g, blank.xh: %g", blank.xl, blank.xh);
     //             xl = blank_.xh;
     //         }
     //         std::cout << std::endl;
@@ -180,8 +180,8 @@ void checkBlanksCPU(
             int xl = -1;
             for (const auto& blank : row) {
                 if (printable) std::cout << blank.toString() << " ";
-                dreamplaceAssertMsg(xl <= int(blank.xl), "xl: %d, blank.xl: %d", xl, int(blank.xl));
-                dreamplaceAssertMsg(blank.xl < blank.xh, "blank.xl: %g, blank.xh: %g", blank.xl, blank.xh);
+                qplacerAssertMsg(xl <= int(blank.xl), "xl: %d, blank.xl: %d", xl, int(blank.xl));
+                qplacerAssertMsg(blank.xl < blank.xh, "blank.xl: %g, blank.xh: %g", blank.xl, blank.xh);
                 xl = blank.xh;
             }
             if (printable) std::cout << std::endl;
@@ -394,7 +394,7 @@ void legalizeBinCPU(
                         //     checkBlanksCPU(edge_touch_blanks, "check edge_touch_blanks", true);
                         //     checkBlanksCPU(bin_blanks, "check bin_blanks", true);
                         // }
-                        dreamplaceAssert(converted);
+                        qplacerAssert(converted);
 
                         best_blank_bin_id_y = blank_bin_id_y; 
                         std::copy(row_best_blank_bi, row_best_blank_bi+num_node_rows, best_blank_bi);
@@ -521,19 +521,19 @@ void legalizeBinCPU(
                 y[node_id] = best_yl; 
                 // update cell position and blank 
                 for (int row_offset = 0; row_offset < num_node_rows; ++row_offset) {
-                    dreamplaceAssert(best_blank_bi[row_offset] >= 0); 
+                    qplacerAssert(best_blank_bi[row_offset] >= 0); 
                     // blanks in this bin 
                     int best_blank_bin_id = bin_id_x*blank_num_bins_y+best_blank_bin_id_y+row_offset; 
                     std::vector<Blank<T> >& blanks = bin_blanks.at(best_blank_bin_id);
                     Blank<T>& blank = blanks.at(best_blank_bi[row_offset]); 
-                    dreamplaceAssert(best_xl >= blank.xl && best_xl+width <= blank.xh);
-                    dreamplaceAssert(best_yl+row_height*row_offset == blank.yl);
+                    qplacerAssert(best_xl >= blank.xl && best_xl+width <= blank.xh);
+                    qplacerAssert(best_yl+row_height*row_offset == blank.yl);
 
                     if (best_xl == blank.xl) {  // left side touch
                         // update blank 
                         blank.xl += width; 
                         if (floorDiv((blank.xl-xl), site_width)*site_width != blank.xl-xl) {
-                            dreamplacePrint(kDEBUG, "1. move node %d from %g to %g, blank (%g, %g)\n", 
+                            qplacerPrint(kDEBUG, "1. move node %d from %g to %g, blank (%g, %g)\n", 
                             node_id, x[node_id], blank.xl, blank.xl, blank.xh);
                         }
                         if (blank.xl >= blank.xh) {
@@ -544,7 +544,7 @@ void legalizeBinCPU(
                         // update blank 
                         blank.xh -= width; 
                         if (floorDiv((blank.xh-xl), site_width)*site_width != blank.xh-xl) {
-                            dreamplacePrint(kDEBUG, "2. move node %d from %g to %g, blank (%g, %g)\n",
+                            qplacerPrint(kDEBUG, "2. move node %d from %g to %g, blank (%g, %g)\n",
                              node_id, x[node_id], blank.xh-width, blank.xl, blank.xh);
                         }
                         if (blank.xl >= blank.xh) {
@@ -564,7 +564,7 @@ void legalizeBinCPU(
                             || floorDiv((new_blank.xl-xl), site_width)*site_width != new_blank.xl-xl
                             || floorDiv((new_blank.xh-xl), site_width)*site_width != new_blank.xh-xl)
                         {
-                            dreamplacePrint(kDEBUG, "3. move node %d from %g to %g, blank (%g, %g), new_blank (%g, %g)\n",
+                            qplacerPrint(kDEBUG, "3. move node %d from %g to %g, blank (%g, %g), new_blank (%g, %g)\n",
                              node_id, x[node_id], init_xl, blank.xl, blank.xh, new_blank.xl, new_blank.xh);
                         }
                         bin_blanks.at(best_blank_bin_id).insert(bin_blanks.at(best_blank_bin_id).begin()+best_blank_bi[row_offset]+1, new_blank);
@@ -746,4 +746,4 @@ void instantiateLegalizeBinCPU(
     );
 }
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE

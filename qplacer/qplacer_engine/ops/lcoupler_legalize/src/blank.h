@@ -1,9 +1,9 @@
-#ifndef DREAMPLACE_BLANK_H
-#define DREAMPLACE_BLANK_H
+#ifndef QPLACER_BLANK_H
+#define QPLACER_BLANK_H
 
 #include "utility/src/utils.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 template <typename T>
 struct Interval {
@@ -42,6 +42,6 @@ struct Blank {
 	}
 };
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

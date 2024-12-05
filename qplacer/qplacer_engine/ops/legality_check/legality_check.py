@@ -1,16 +1,4 @@
-##
-# @file   legality_check.py
-# @author Yibo Lin
-# @date   Jan 2020
-#
-
-import math
-import torch
-from torch import nn
-from torch.autograd import Function
-
 import operators.qplacement.ops.legality_check.legality_check_cpp as legality_check_cpp
-
 
 class LegalityCheck(object):
     """ Check legality including, 

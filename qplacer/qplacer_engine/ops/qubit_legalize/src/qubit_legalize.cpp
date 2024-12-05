@@ -7,7 +7,7 @@
 #include "qubit_legalize/src/hannan_legalize.h"
 #include "qubit_legalize/src/lp_legalize.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 /// @brief The Qubit legalization follows the way of floorplanning,
 /// because Qubit have quite different sizes.
@@ -60,7 +60,7 @@ at::Tensor qubit_legalization_forward(
 	CPUTimer::hr_clock_rep timer_start, timer_stop;
 	timer_start = CPUTimer::getGlobaltime();
 	// Call the cuda kernel launcher
-	DREAMPLACE_DISPATCH_FLOATING_TYPES(pos, "qubitLegalizationLauncher", [&] {
+	QPLACER_DISPATCH_FLOATING_TYPES(pos, "qubitLegalizationLauncher", [&] {
 		auto db = make_placedb<scalar_t>(
 			init_pos, pos_copy, node_size_x, node_size_y, node_weights,
 			flat_region_boxes, flat_region_boxes_start, node2fence_region_map,
@@ -69,7 +69,7 @@ at::Tensor qubit_legalization_forward(
 		qubitLegalizationLauncher<scalar_t>(db);
 	});
 	timer_stop = CPUTimer::getGlobaltime();
-	dreamplacePrint(kINFO, "Qubit legalization takes %g ms\n",
+	qplacerPrint(kINFO, "Qubit legalization takes %g ms\n",
 					(timer_stop - timer_start) * CPUTimer::getTimerPeriod());
 
 	return pos_copy;
@@ -90,7 +90,7 @@ bool check_qubit_legality(LegalizationDB<T> db, const std::vector<int>& qubits, 
 		T yh2 = yl2 + height2;
 	
 		if (std::min(xh1, xh2) > std::max(xl1, xl2) && std::min(yh1, yh2) > std::max(yl1, yl2)) {
-			dreamplacePrint((fast_check) ? kWARN : kERROR,
+			qplacerPrint((fast_check) ? kWARN : kERROR,
 							"qubit %d (%g, %g, %g, %g) var %d overlaps with qubit %d "
 							"(%g, %g, %g, %g) var %d, fixed: %d\n",
 							node_id1, xl1, yl1, xh1, yh1, i, node_id2, xl2, yl2, xh2,
@@ -141,9 +141,9 @@ bool check_qubit_legality(LegalizationDB<T> db, const std::vector<int>& qubits, 
 		}
   }
   if (legal) {
-    dreamplacePrint(kDEBUG, "Qubit legality check [PASSED]\n");
+    qplacerPrint(kDEBUG, "Qubit legality check [PASSED]\n");
   } else {
-    dreamplacePrint(kERROR, "Qubit legality check [FAILED]\n");
+    qplacerPrint(kERROR, "Qubit legality check [FAILED]\n");
   }
 
   return legal;
@@ -166,7 +166,7 @@ bool check_qubit_legality_touch(LegalizationDB<T> db, const std::vector<int>& qu
     if (std::min(xh1, xh2) > std::max(xl1, xl2) - db.site_width &&
         std::min(yh1, yh2) > std::max(yl1, yl2) - db.site_width) { // touch return false
 
-      dreamplacePrint((fast_check) ? kWARN : kERROR,
+      qplacerPrint((fast_check) ? kWARN : kERROR,
                       "qubit %d (%g, %g, %g, %g) var %d touches/overlaps with qubit %d "
                       "(%g, %g, %g, %g) var %d, fixed: %d\n",
                       node_id1, xl1, yl1, xh1, yh1, i, node_id2, xl2, yl2, xh2,
@@ -221,9 +221,9 @@ bool check_qubit_legality_touch(LegalizationDB<T> db, const std::vector<int>& qu
     }
   }
   if (legal) {
-    dreamplacePrint(kDEBUG, "Qubit touch-legality check [PASSED]\n");
+    qplacerPrint(kDEBUG, "Qubit touch-legality check [PASSED]\n");
   } else {
-    dreamplacePrint(kERROR, "Qubit touch-legality check [FAILED]\n");
+    qplacerPrint(kERROR, "Qubit touch-legality check [FAILED]\n");
   }
   return legal;
 }
@@ -381,7 +381,7 @@ void roughLegalizeLauncher(const LegalizationDB<T>& db,
 
                 // if (node_id2 == 1096674)
                 if (node_id1 == 1096131 || node_id1 == 1096158) {
-                  dreamplacePrint(kDEBUG,
+                  qplacerPrint(kDEBUG,
                                   "%d (%g, %g, %g, %g) overlap %d (%g, %g, %g, "
                                   "%g), (%g, %g, %g, %g), (%u, %u, %u, %u)\n",
                                   node_id1, box1.xl, box1.yl, box1.xh, box1.yh,
@@ -398,7 +398,7 @@ void roughLegalizeLauncher(const LegalizationDB<T>& db,
             if ((intersect_directs[kXLOW] && intersect_directs[kXHIGH]) ||
                 (intersect_directs[kYLOW] && intersect_directs[kYHIGH])) {
               markers[node_id1] = true;
-              dreamplacePrint(kDEBUG, "collect %d\n", node_id1);
+              qplacerPrint(kDEBUG, "collect %d\n", node_id1);
               break;
             }
           }
@@ -416,15 +416,15 @@ void roughLegalizeLauncher(const LegalizationDB<T>& db,
     }
   }
 
-  dreamplacePrint(kINFO, "Rough legalize small clusters with %lu qubits\n",
+  qplacerPrint(kINFO, "Rough legalize small clusters with %lu qubits\n",
                   qubits_for_rough_legalize.size());
 #ifdef DEBUG
-  dreamplacePrint(kDEBUG, "qubits_for_rough_legalize[%lu]\n",
+  qplacerPrint(kDEBUG, "qubits_for_rough_legalize[%lu]\n",
                   qubits_for_rough_legalize.size());
   for (auto node_id : qubits_for_rough_legalize) {
-    dreamplacePrint(kNONE, " %d", node_id);
+    qplacerPrint(kNONE, " %d", node_id);
   }
-  dreamplacePrint(kNONE, "\n");
+  qplacerPrint(kNONE, "\n");
 #endif
   hannanLegalizeLauncher(db, qubits_for_rough_legalize,
                          fixed_qubits_for_rough_legalize, 1);
@@ -443,12 +443,12 @@ bool qubitLegalizationLauncher(LegalizationDB<T> db) {
         qubits.push_back(i);
       }
 #ifdef DEBUG
-      dreamplacePrint(kDEBUG, "qubit %d %gx%g\n", i, db.node_size_x[i],
+      qplacerPrint(kDEBUG, "qubit %d %gx%g\n", i, db.node_size_x[i],
                       db.node_size_y[i]);
 #endif
     }
   }
-  dreamplacePrint(
+  qplacerPrint(
       kINFO,
       "Qubit legalization: regard %lu cells as dummy fixed (movable qubits)\n",
       qubits.size());
@@ -495,7 +495,7 @@ bool qubitLegalizationLauncher(LegalizationDB<T> db) {
   bool blocked_qubits_flag = false;
   roughLegalizeLauncher(db, qubits, fixed_qubits, small_clusters_flag, blocked_qubits_flag);
   auto displace = compute_displace(db, qubits);
-  dreamplacePrint(
+  qplacerPrint(
       kINFO, "Qubit displacement (rough) total %g, max %g, weighted total %g, max %g\n",
       displace.total_displace, displace.max_displace,
       displace.total_weighted_displace, displace.max_weighted_displace);
@@ -507,7 +507,7 @@ bool qubitLegalizationLauncher(LegalizationDB<T> db) {
   for (int num_spacing=2; num_spacing>=1; num_spacing--){
     lpLegalizeGraphLauncher(db, qubits, fixed_qubits, num_spacing);
     displace = compute_displace(db, qubits);
-    dreamplacePrint(
+    qplacerPrint(
         kINFO, "Qubit (lpGraph) num_spacing %d, total %g, max %g, weighted total %g, max %g\n",
         num_spacing,
         displace.total_displace, displace.max_displace,
@@ -521,7 +521,7 @@ bool qubitLegalizationLauncher(LegalizationDB<T> db) {
     }
   }
 
-  dreamplacePrint(kINFO, "Align qubits to site and rows\n");
+  qplacerPrint(kINFO, "Align qubits to site and rows\n");
   // align the lower left corner to row and site
   for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i) {
     int node_id = qubits[i];
@@ -533,9 +533,9 @@ bool qubitLegalizationLauncher(LegalizationDB<T> db) {
   return legal;
 }
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  m.def("forward", &DREAMPLACE_NAMESPACE::qubit_legalization_forward,
+  m.def("forward", &QPLACER_NAMESPACE::qubit_legalization_forward,
         "Qubit legalization forward");
 }

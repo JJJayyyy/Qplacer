@@ -1,7 +1,7 @@
 // #include "function_cpu.h"
 #include "lcoupler_legalize/src/function_cpu.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 void mergeBinCellsCPU(
         const std::vector<std::vector<int> >& src_bin_cells, 
@@ -35,4 +35,4 @@ void mergeBinCellsCPU(
     }
 }
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE

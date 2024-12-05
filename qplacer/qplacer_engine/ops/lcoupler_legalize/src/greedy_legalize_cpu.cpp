@@ -9,7 +9,7 @@
 // #include "function_cpu.h"
 #include "lcoupler_legalize/src/function_cpu.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 template <typename T>
 int greedyLegalizationCPU(
@@ -37,7 +37,7 @@ int greedyLegalizationCPU(
         // bin dimension in y direction for blanks is different from that for cells 
         T blank_bin_size_y = row_height; 
         int blank_num_bins_y = floorDiv((yh-yl), blank_bin_size_y); 
-        dreamplacePrint(kDEBUG, "%s blank_num_bins_y = %d\n", "Standard cell legalization", blank_num_bins_y);
+        qplacerPrint(kDEBUG, "%s blank_num_bins_y = %d\n", "Standard cell legalization", blank_num_bins_y);
 
         // allocate bin cells and distribute cells to bins 
         std::vector<std::vector<int>> bin_cells (num_bins_x*num_bins_y); 
@@ -93,7 +93,7 @@ int greedyLegalizationCPU(
 		// }
 
         for (int iter = 0; iter < num_iters; ++iter){
-            dreamplacePrint(kDEBUG, "%s iteration %d with %dx%d bins\n", 
+            qplacerPrint(kDEBUG, "%s iteration %d with %dx%d bins\n", 
 				"Standard cell legalization", iter, num_bins_x, num_bins_y);
             num_unplaced_cells_host = 0; 
             // countBinObjects(bin_cells); countBinObjects(bin_blanks);
@@ -121,9 +121,9 @@ int greedyLegalizationCPU(
 				node_in_group	// nodes in edges
 			);
             milliseconds = (clock()-milliseconds)/CLOCKS_PER_SEC*1000; 
-            dreamplacePrint(kINFO, "%s legalizeBin takes %.3f ms\n", 
+            qplacerPrint(kINFO, "%s legalizeBin takes %.3f ms\n", 
 				"Standard cell legalization", milliseconds);
-            dreamplacePrint(kDEBUG, "%s num_unplaced_cells = %d\n", 
+            qplacerPrint(kDEBUG, "%s num_unplaced_cells = %d\n", 
 				"Standard cell legalization", num_unplaced_cells_host); 
             if (num_unplaced_cells_host == 0 || iter+1 == num_iters){
                 break; 
@@ -143,9 +143,9 @@ int greedyLegalizationCPU(
 				&min_unplaced_node_size_x_host
 			);
             milliseconds = (clock()-milliseconds)/CLOCKS_PER_SEC*1000; 
-            dreamplacePrint(kINFO, "%s minNodeSize takes %.3f ms\n", 
+            qplacerPrint(kINFO, "%s minNodeSize takes %.3f ms\n", 
 				"Standard cell legalization", milliseconds);
-            dreamplacePrint(kDEBUG, "%s minimum unplaced node_size_x %d sites\n", 
+            qplacerPrint(kDEBUG, "%s minimum unplaced node_size_x %d sites\n", 
 				"Standard cell legalization", min_unplaced_node_size_x_host);
 
             // ceil(num_bins_x/2), ceil(num_bins_y/2)
@@ -164,7 +164,7 @@ int greedyLegalizationCPU(
 				scale_ratio_x, scale_ratio_y
 			);
             milliseconds = (clock()-milliseconds)/CLOCKS_PER_SEC*1000; 
-            dreamplacePrint(kDEBUG, "%s mergeBinCells takes %.3f ms\n", 
+            qplacerPrint(kDEBUG, "%s mergeBinCells takes %.3f ms\n", 
 				"Standard cell legalization", milliseconds);
             milliseconds = clock(); 
             resizeBinObjectsCPU(bin_blanks_copy, dst_num_bins_x, blank_num_bins_y);
@@ -177,7 +177,7 @@ int greedyLegalizationCPU(
 				min_unplaced_node_size_x_host*site_width
 			);
             milliseconds = (clock()-milliseconds)/CLOCKS_PER_SEC*1000; 
-            dreamplacePrint(kDEBUG, "%s mergeBinBlanks takes %.3f ms\n", 
+            qplacerPrint(kDEBUG, "%s mergeBinBlanks takes %.3f ms\n", 
 				"Standard cell legalization", milliseconds);
 
             // update bin dimensions
@@ -207,7 +207,7 @@ int instantiateGreedyLegalizationCPU(
 	const int num_movable_nodes,
 	std::vector<std::vector<int>> node_in_group
 	){
-	dreamplacePrint(kINFO, "---------- Greedy float ----------\n");
+	qplacerPrint(kINFO, "---------- Greedy float ----------\n");
     return greedyLegalizationCPU(
 		db, 
 		init_x, init_y, 
@@ -234,7 +234,7 @@ int instantiateGreedyLegalizationCPU(
 	const int num_movable_nodes,
 	std::vector<std::vector<int>> node_in_group
 	){
-	dreamplacePrint(kINFO, "---------- Greedy double ----------\n");
+	qplacerPrint(kINFO, "---------- Greedy double ----------\n");
     return greedyLegalizationCPU(
 		db, 
 		init_x, init_y, 
@@ -249,4 +249,4 @@ int instantiateGreedyLegalizationCPU(
 	);
 }
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE

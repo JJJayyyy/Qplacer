@@ -1,16 +1,10 @@
-/**
- * @file   timer.h
- * @author Yibo Lin
- * @date   Apr 2020
- */
-
-#ifndef DREAMPLACE_UTILITY_TIMER_H
-#define DREAMPLACE_UTILITY_TIMER_H
+#ifndef QPLACER_UTILITY_TIMER_H
+#define QPLACER_UTILITY_TIMER_H
 
 #include <chrono>
 #include "utility/src/namespace.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 struct CPUTimer {
   typedef std::chrono::high_resolution_clock::rep hr_clock_rep;
@@ -26,6 +20,6 @@ struct CPUTimer {
   }
 };
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

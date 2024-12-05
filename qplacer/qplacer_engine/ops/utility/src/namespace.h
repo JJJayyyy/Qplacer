@@ -1,14 +1,21 @@
-/**
- * @file   Namespace.h
- * @author Yibo Lin
- * @date   Jan 2019
- */
+// #ifndef QPLACER_UTILITY_NAMESPACE_H
+// #define QPLACER_UTILITY_NAMESPACE_H
 
-#ifndef DREAMPLACE_UTILITY_NAMESPACE_H
-#define DREAMPLACE_UTILITY_NAMESPACE_H
+// #define QPLACER_NAMESPACE QPlacer
+// #define QPLACER_BEGIN_NAMESPACE namespace QPlacer {
+// #define QPLACER_END_NAMESPACE }
 
-#define DREAMPLACE_NAMESPACE DreamPlace
-#define DREAMPLACE_BEGIN_NAMESPACE namespace DreamPlace {
-#define DREAMPLACE_END_NAMESPACE }
+// #endif
+
+
+
+
+#ifndef QPLACER_NAMESPACE_H
+#define QPLACER_NAMESPACE_H
+
+
+#define QPLACER_NAMESPACE QPlacer
+#define QPLACER_BEGIN_NAMESPACE namespace QPlacer {
+#define QPLACER_END_NAMESPACE }
 
 #endif

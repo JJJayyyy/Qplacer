@@ -1,16 +1,10 @@
-/**
- * @file   compare_cpu.h
- * @author Yibo Lin
- * @date   Oct 2018
- */
-
-#ifndef DREAMPLACE_COMPARE_CPU_H
-#define DREAMPLACE_COMPARE_CPU_H
+#ifndef QPLACER_COMPARE_CPU_H
+#define QPLACER_COMPARE_CPU_H
 
 #include "blank.h"
 #include "utility/src/utils.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 template <typename T>
 struct CompareByBlankYLXLCPU {
@@ -92,6 +86,6 @@ struct CompareByNodeNTUPlaceCostFromLeftCPU {
   const T* node_size_y;
 };
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

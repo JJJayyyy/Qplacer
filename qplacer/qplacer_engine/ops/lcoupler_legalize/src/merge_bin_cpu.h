@@ -1,11 +1,11 @@
-#ifndef DREAMPLACE_MERGE_BIN_CPU_H
-#define DREAMPLACE_MERGE_BIN_CPU_H
+#ifndef QPLACER_MERGE_BIN_CPU_H
+#define QPLACER_MERGE_BIN_CPU_H
 
 #include <cstdio>
 #include <vector>
 #include "utility/src/utils.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 /// assume num_bins_x*num_bins_y is smaller than bin_objs.size
 /// assume num_bins_x*num_bins_y*max_objs_per_bin is no larger than the numbers
@@ -22,7 +22,7 @@ void countBinObjects(const std::vector<std::vector<T> >& bin_objs) {
   for (unsigned int i = 0; i < bin_objs.size(); ++i) {
     count += bin_objs.at(i).size();
   }
-  dreamplacePrint(kDEBUG, "#bin_objs = %d\n", count);
+  qplacerPrint(kDEBUG, "#bin_objs = %d\n", count);
 }
 
 template <typename T>
@@ -47,7 +47,7 @@ void mergeBinBlanksCPU(
 
     std::vector<Blank<T> >& dst_bin_blank = dst_bin_blanks.at(i);
 
-    // dreamplacePrint(kDEBUG, "dst_bin_blanks[%d] (%d, %d) found src_bin_blanks
+    // qplacerPrint(kDEBUG, "dst_bin_blanks[%d] (%d, %d) found src_bin_blanks
     // (%d, %d) (%d)\n", i, dst_bin_id_x, dst_bin_id_y, src_bin_id_x_bgn,
     // src_bin_id_x_end, dst_bin_id_y);
 
@@ -96,6 +96,6 @@ void mergeBinCellsCPU(
                        // exactly the same due to even/odd numbers
 );
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

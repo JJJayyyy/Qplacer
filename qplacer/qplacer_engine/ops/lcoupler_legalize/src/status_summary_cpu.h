@@ -1,11 +1,11 @@
-#ifndef DREAMPLACE_NODE_STATUS_SUMMARY_H
-#define DREAMPLACE_NODE_STATUS_SUMMARY_H
+#ifndef QPLACER_NODE_STATUS_SUMMARY_H
+#define QPLACER_NODE_STATUS_SUMMARY_H
 
 #include <vector>
 #include <limits>
 #include "utility/src/utils.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 template <typename T>
 void minNodeSizeCPU(
@@ -32,6 +32,6 @@ void minNodeSizeCPU(
     }
 }
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

@@ -1,11 +1,5 @@
-/**
- * @file   Msg.h
- * @author Yibo Lin
- * @date   Jan 2019
- */
-
-#ifndef DREAMPLACE_UTILITY_MSG_H
-#define DREAMPLACE_UTILITY_MSG_H
+#ifndef QPLACER_UTILITY_MSG_H
+#define QPLACER_UTILITY_MSG_H
 
 #include <cassert>
 #include <cstdarg>
@@ -13,7 +7,7 @@
 #include <cstdlib>
 #include "utility/src/namespace.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 /// message type for print functions
 enum MessageType {
@@ -26,52 +20,51 @@ enum MessageType {
 };
 
 /// print to screen (stdout)
-int dreamplacePrint(MessageType m, const char* format, ...);
+int qplacerPrint(MessageType m, const char* format, ...);
 /// print to stream
-int dreamplacePrintStream(MessageType m, FILE* stream, const char* format, ...);
+int qplacerPrintStream(MessageType m, FILE* stream, const char* format, ...);
 /// core function to print formatted data from variable argument list
-int dreamplaceVPrintStream(MessageType m, FILE* stream, const char* format,
+int qplacerVPrintStream(MessageType m, FILE* stream, const char* format,
                            va_list args);
 /// format to a buffer
-int dreamplaceSPrint(MessageType m, char* buf, const char* format, ...);
+int qplacerSPrint(MessageType m, char* buf, const char* format, ...);
 /// core function to format a buffer
-int dreamplaceVSPrint(MessageType m, char* buf, const char* format,
+int qplacerVSPrint(MessageType m, char* buf, const char* format,
                       va_list args);
 /// format prefix
-int dreamplaceSPrintPrefix(MessageType m, char* buf);
+int qplacerSPrintPrefix(MessageType m, char* buf);
 
 /// assertion
-void dreamplacePrintAssertMsg(const char* expr, const char* fileName,
+void qplacerPrintAssertMsg(const char* expr, const char* fileName,
                               unsigned lineNum, const char* funcName,
                               const char* format, ...);
-void dreamplacePrintAssertMsg(const char* expr, const char* fileName,
+void qplacerPrintAssertMsg(const char* expr, const char* fileName,
                               unsigned lineNum, const char* funcName);
 
-#define dreamplaceAssertMsg(condition, args...)                       \
+#define qplacerAssertMsg(condition, args...)                       \
   do {                                                                \
     if (!(condition)) {                                               \
-      ::DREAMPLACE_NAMESPACE::dreamplacePrintAssertMsg(               \
-          #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__, args); \
+      ::QPlacer::qplacerPrintAssertMsg(#condition, __FILE__, __LINE__, __PRETTY_FUNCTION__, args); \
       abort();                                                        \
     }                                                                 \
   } while (false)
-#define dreamplaceAssert(condition)                             \
+
+#define qplacerAssert(condition)                             \
   do {                                                          \
     if (!(condition)) {                                         \
-      ::DREAMPLACE_NAMESPACE::dreamplacePrintAssertMsg(         \
-          #condition, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+      ::QPlacer::qplacerPrintAssertMsg(#condition, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
       abort();                                                  \
     }                                                           \
   } while (false)
 
 /// static assertion
 template <bool>
-struct dreamplaceStaticAssert;
+struct qplacerStaticAssert;
 template <>
-struct dreamplaceStaticAssert<true> {
-  dreamplaceStaticAssert(const char* = NULL) {}
+struct qplacerStaticAssert<true> {
+  qplacerStaticAssert(const char* = NULL) {}
 };
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

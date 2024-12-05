@@ -1,11 +1,11 @@
-#ifndef DREAMPLACE_QUBIT_LEGALIZE_HANNAN_LEGALIZE_H
-#define DREAMPLACE_QUBIT_LEGALIZE_HANNAN_LEGALIZE_H
+#ifndef QPLACER_QUBIT_LEGALIZE_HANNAN_LEGALIZE_H
+#define QPLACER_QUBIT_LEGALIZE_HANNAN_LEGALIZE_H
 
 #include <vector>
 #include <algorithm>
-#include "utility/src/diamond_search.h"
+#include "qubit_legalize/src/diamond_search.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 /// @brief A class models Hannan grids. 
 template <typename T>
@@ -130,14 +130,14 @@ class HannanGrids
 #ifdef DEBUG
             for (auto cx : m_coordx)
             {
-                dreamplacePrint(kNONE, "%g ", (double)cx);
+                qplacerPrint(kNONE, "%g ", (double)cx);
             }
-            dreamplacePrint(kNONE, "\n"); 
+            qplacerPrint(kNONE, "\n"); 
             for (auto cy : m_coordy)
             {
-                dreamplacePrint(kNONE, "%g ", (double)cy);
+                qplacerPrint(kNONE, "%g ", (double)cy);
             }
-            dreamplacePrint(kNONE, "\n"); 
+            qplacerPrint(kNONE, "\n"); 
 #endif
         }
 
@@ -229,7 +229,7 @@ class HannanGridMap : public HannanGrids<T>
 template <typename T>
 bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& qubits, const std::vector<int>& fixed_qubits, int max_iters)
 {
-    dreamplacePrint(kINFO, "Legalize movable qubits on Hannan grids\n");
+    qplacerPrint(kINFO, "Legalize movable qubits on Hannan grids\n");
 
     // count number of failures to control the order 
     std::vector<int> failure_counts (db.num_movable_nodes, 0);
@@ -239,7 +239,7 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& qubits, cons
 
     for (int iter = 0; iter < max_iters; ++iter)
     {
-        dreamplacePrint(kINFO, "Hannan round %d\n", iter);
+        qplacerPrint(kINFO, "Hannan round %d\n", iter);
         // copy location to working array 
         for (auto node_id : qubits)
         {
@@ -272,7 +272,7 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& qubits, cons
         // make sure the grid is not too small 
         spacing_x = std::max(spacing_x, (db.xh-db.xl)/db.num_bins_x); 
         spacing_y = std::max(spacing_y, (db.yh-db.yl)/db.num_bins_y);
-        dreamplacePrint(kDEBUG, "maximum grid spacing %gx%g, equivalent to %dx%d bins\n", 
+        qplacerPrint(kDEBUG, "maximum grid spacing %gx%g, equivalent to %dx%d bins\n", 
                 (double)spacing_x, (double)spacing_y, (int)((db.xh-db.xl)/spacing_x), (int)((db.yh-db.yl)/spacing_y));
 
         // construct hannan grid map for fixed qubits 
@@ -339,7 +339,7 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& qubits, cons
         }
 
         auto search_grids = diamond_search_sequence(grid_map.dim_y(), grid_map.dim_x()); 
-        dreamplacePrint(kDEBUG, "Construct %lux%lu Hannan grids, diamond search sequence %lu\n", grid_map.dim_x(), grid_map.dim_y(), search_grids.size());
+        qplacerPrint(kDEBUG, "Construct %lux%lu Hannan grids, diamond search sequence %lu\n", grid_map.dim_x(), grid_map.dim_y(), search_grids.size());
 
         legal = true; 
         for (auto node_id : qubits)
@@ -364,8 +364,8 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& qubits, cons
                     T yl = grid_map.coord_y(iy);
                     if (grid_offset.ic == 0 && grid_offset.ir == 0)
                     {
-                        dreamplaceAssertMsg(xl == node_x, "%g != %g", xl, node_x);
-                        dreamplaceAssertMsg(yl == node_y, "%g != %g", yl, node_y);
+                        qplacerAssertMsg(xl == node_x, "%g != %g", xl, node_x);
+                        qplacerAssertMsg(yl == node_y, "%g != %g", yl, node_y);
                     }
 
                     // make sure the coordinates are aligned to row and site 
@@ -394,7 +394,7 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& qubits, cons
             }
             if (!found)
             {
-                dreamplacePrint(kERROR, "failed to find legal position for qubit %d (%g, %g, %g, %g)\n", 
+                qplacerPrint(kERROR, "failed to find legal position for qubit %d (%g, %g, %g, %g)\n", 
                         node_id, node_x, node_y, node_x + width, node_y + height
                         );
                 failure_counts[node_id] += 1; 
@@ -417,6 +417,6 @@ bool hannanLegalizeLauncher(LegalizationDB<T> db, std::vector<int>& qubits, cons
     return legal; 
 }
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

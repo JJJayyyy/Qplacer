@@ -1,41 +1,35 @@
-/*************************************************************************
-    > File Name: Msg.cpp
-    > Author: Yibo Lin
-    > Mail: yibolin@utexas.edu
-    > Created Time: Fri 31 Jul 2015 03:20:14 PM CDT
- ************************************************************************/
 
 #include "utility/src/msg.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
-int dreamplacePrint(MessageType m, const char* format, ...) {
+int qplacerPrint(MessageType m, const char* format, ...) {
   va_list args;
   va_start(args, format);
-  int ret = dreamplaceVPrintStream(m, stdout, format, args);
+  int ret = qplacerVPrintStream(m, stdout, format, args);
   va_end(args);
 
   return ret;
 }
 
-int dreamplacePrintStream(MessageType m, FILE* stream, const char* format,
+int qplacerPrintStream(MessageType m, FILE* stream, const char* format,
                           ...) {
   va_list args;
   va_start(args, format);
-  int ret = dreamplaceVPrintStream(m, stream, format, args);
+  int ret = qplacerVPrintStream(m, stream, format, args);
   va_end(args);
 
   return ret;
 }
 
-int dreamplaceVPrintStream(MessageType m, FILE* stream, const char* format,
+int qplacerVPrintStream(MessageType m, FILE* stream, const char* format,
                            va_list args) {
   // print prefix
   char prefix[16];
-  dreamplaceSPrintPrefix(m, prefix);
+  qplacerSPrintPrefix(m, prefix);
   fprintf(stream, "%s", prefix);
 
   // print message
@@ -44,20 +38,20 @@ int dreamplaceVPrintStream(MessageType m, FILE* stream, const char* format,
   return ret;
 }
 
-int dreamplaceSPrint(MessageType m, char* buf, const char* format, ...) {
+int qplacerSPrint(MessageType m, char* buf, const char* format, ...) {
   va_list args;
   va_start(args, format);
-  int ret = dreamplaceVSPrint(m, buf, format, args);
+  int ret = qplacerVSPrint(m, buf, format, args);
   va_end(args);
 
   return ret;
 }
 
-int dreamplaceVSPrint(MessageType m, char* buf, const char* format,
+int qplacerVSPrint(MessageType m, char* buf, const char* format,
                       va_list args) {
   // print prefix
   char prefix[16];
-  dreamplaceSPrintPrefix(m, prefix);
+  qplacerSPrintPrefix(m, prefix);
   sprintf(buf, "%s", prefix);
 
   // print message
@@ -66,7 +60,7 @@ int dreamplaceVSPrint(MessageType m, char* buf, const char* format,
   return ret;
 }
 
-int dreamplaceSPrintPrefix(MessageType m, char* prefix) {
+int qplacerSPrintPrefix(MessageType m, char* prefix) {
   switch (m) {
     case kNONE:
       return sprintf(prefix, "%c", '\0');
@@ -81,12 +75,12 @@ int dreamplaceSPrintPrefix(MessageType m, char* prefix) {
     case kASSERT:
       return sprintf(prefix, "[ASSERT ] ");
     default:
-      dreamplaceAssertMsg(0, "unknown message type");
+      qplacerAssertMsg(0, "unknown message type");
   }
   return 0;
 }
 
-void dreamplacePrintAssertMsg(const char* expr, const char* fileName,
+void qplacerPrintAssertMsg(const char* expr, const char* fileName,
                               unsigned lineNum, const char* funcName,
                               const char* format, ...) {
   // construct message
@@ -97,16 +91,17 @@ void dreamplacePrintAssertMsg(const char* expr, const char* fileName,
   va_end(args);
 
   // print message
-  dreamplacePrintStream(kASSERT, stderr,
+  qplacerPrintStream(kASSERT, stderr,
                         "%s:%u: %s: Assertion `%s' failed: %s\n", fileName,
                         lineNum, funcName, expr, buf);
 }
 
-void dreamplacePrintAssertMsg(const char* expr, const char* fileName,
+void qplacerPrintAssertMsg(const char* expr, const char* fileName,
                               unsigned lineNum, const char* funcName) {
   // print message
-  dreamplacePrintStream(kASSERT, stderr, "%s:%u: %s: Assertion `%s' failed\n",
+  qplacerPrintStream(kASSERT, stderr, "%s:%u: %s: Assertion `%s' failed\n",
                         fileName, lineNum, funcName, expr);
 }
 
-DREAMPLACE_END_NAMESPACE
+
+QPLACER_END_NAMESPACE

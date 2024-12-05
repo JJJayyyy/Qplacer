@@ -1,5 +1,5 @@
-#ifndef DREAMPLACE_QUBIT_LEGALIZE_LP_LEGALIZE_H
-#define DREAMPLACE_QUBIT_LEGALIZE_LP_LEGALIZE_H
+#ifndef QPLACER_QUBIT_LEGALIZE_LP_LEGALIZE_H
+#define QPLACER_QUBIT_LEGALIZE_LP_LEGALIZE_H
 
 #include <vector>
 #include <array>
@@ -10,7 +10,7 @@
 #include <lemon/connectivity.h>
 #include "qubit_legalize/src/Util.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 template <typename T>
 struct NodeAttribute 
@@ -37,7 +37,7 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& q
     source = qubits.size() + num_fixed_nodes;
     terminal = source + 1; 
 
-    dreamplacePrint(kDEBUG, "source %u, terminal %u\n", source, terminal);
+    qplacerPrint(kDEBUG, "source %u, terminal %u\n", source, terminal);
 
     for (unsigned int i = 0; i < num_graph_nodes; ++i)
     {
@@ -231,14 +231,14 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& q
             for (lemon_graph_type::InArcIt a (cg[xy], cg[xy].nodeFromId(v)); a != lemon::INVALID; ++a)
             {
                 auto u = cg[xy].id(cg[xy].source(a));
-                dreamplaceAssert(u != v);
-                dreamplaceAssert((unsigned)v < num_graph_nodes);
-                dreamplaceAssert((unsigned)u < num_graph_nodes);
+                qplacerAssert(u != v);
+                qplacerAssert((unsigned)v < num_graph_nodes);
+                qplacerAssert((unsigned)u < num_graph_nodes);
                 if (attribute_map.at(u).demand[xy] < attribute_map.at(source).demand[xy]) // not computed 
                 {
                     update_demand_recursive(xy, u);
                 }
-                dreamplaceAssertMsg(attribute_map.at(u).demand[xy] >= attribute_map.at(source).demand[xy], "demand[%d] = %g, demand[s%u] = %g, v = %d", u, attribute_map.at(u).demand[xy], source, attribute_map.at(source).demand[xy], v);
+                qplacerAssertMsg(attribute_map.at(u).demand[xy] >= attribute_map.at(source).demand[xy], "demand[%d] = %g, demand[s%u] = %g, v = %d", u, attribute_map.at(u).demand[xy], source, attribute_map.at(source).demand[xy], v);
                 attribute_map.at(v).demand[xy] = std::max(attribute_map.at(u).demand[xy] + attribute_map.at(u).cost[xy], attribute_map.at(v).demand[xy]);
             }
         }
@@ -252,14 +252,14 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& q
             for (lemon_graph_type::OutArcIt a (cg[xy], cg[xy].nodeFromId(v)); a != lemon::INVALID; ++a)
             {
                 auto u = cg[xy].id(cg[xy].target(a));
-                dreamplaceAssert(u != v);
-                dreamplaceAssert((unsigned)v < num_graph_nodes);
-                dreamplaceAssert((unsigned)u < num_graph_nodes);
+                qplacerAssert(u != v);
+                qplacerAssert((unsigned)v < num_graph_nodes);
+                qplacerAssert((unsigned)u < num_graph_nodes);
                 if (attribute_map.at(u).require[xy] > attribute_map.at(terminal).require[xy]) // not computed 
                 {
                     update_require_recursive(xy, u);
                 }
-                dreamplaceAssert(attribute_map.at(u).require[xy] <= attribute_map.at(terminal).require[xy]);
+                qplacerAssert(attribute_map.at(u).require[xy] <= attribute_map.at(terminal).require[xy]);
                 attribute_map.at(v).require[xy] = std::min(attribute_map.at(u).require[xy] - attribute_map.at(v).cost[xy], attribute_map.at(v).require[xy]);
             }
         }
@@ -286,7 +286,7 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& q
             for (lemon_graph_type::OutArcIt a (cg[xy], cg[xy].nodeFromId(v)); a != lemon::INVALID; ++a)
             {
                 auto u = cg[xy].id(cg[xy].target(a));
-                dreamplaceAssert(u != v);
+                qplacerAssert(u != v);
                 if (!visited[u])
                 {
                     visited[u] = true; 
@@ -317,7 +317,7 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& q
             for (lemon_graph_type::InArcIt a (cg[xy], cg[xy].nodeFromId(v)); a != lemon::INVALID; ++a)
             {
                 auto u = cg[xy].id(cg[xy].source(a));
-                dreamplaceAssert(u != v);
+                qplacerAssert(u != v);
                 if (!visited[u])
                 {
                     visited[u] = true; 
@@ -355,7 +355,7 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& q
             tns[kX] += slack[kX];
             tns[kY] += slack[kY];
         }
-        dreamplacePrint(kDEBUG, "%s TNS[X/Y] = %g/%g, WNS[X/Y] = %g/%g\n", msg, tns[kX], tns[kY], wns[kX], wns[kY]);
+        qplacerPrint(kDEBUG, "%s TNS[X/Y] = %g/%g, WNS[X/Y] = %g/%g\n", msg, tns[kX], tns[kY], wns[kX], wns[kY]);
     };
 
 #ifdef DEBUG
@@ -363,7 +363,7 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& q
         for (unsigned int v = 0; v < num_graph_nodes; ++v)
         {
             auto const& attr = attribute_map.at(v); 
-            dreamplacePrint(kDEBUG, "[%u] demand %g/%g, require %g/%g, slack %g/%g\n", v, attr.demand[kX], attr.demand[kY], attr.require[kX], attr.require[kY], attr.slack(kX), attr.slack(kY));
+            qplacerPrint(kDEBUG, "[%u] demand %g/%g, require %g/%g, slack %g/%g\n", v, attr.demand[kX], attr.demand[kY], attr.require[kX], attr.require[kY], attr.slack(kX), attr.slack(kY));
         }
     };
 #endif
@@ -483,7 +483,7 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& q
                 // remove arc 
                 cg[xy].erase(a);
 
-                dreamplacePrint(kDEBUG, "switch arc (%d, %d) from %d to %d\n", u, v, xy, !xy);
+                qplacerPrint(kDEBUG, "switch arc (%d, %d) from %d to %d\n", u, v, xy, !xy);
 
                 unset_downstream_demand(xy, v);
                 update_demand_recursive(xy, terminal); 
@@ -515,7 +515,7 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& q
             auto u = cg[xy].id(cg[xy].target(a)); 
             markers.at(u) = true; 
         }
-        dreamplaceAssert(std::find(markers.begin(), markers.end(), 0) == markers.end());
+        qplacerAssert(std::find(markers.begin(), markers.end(), 0) == markers.end());
     }
     for (int xy = 0; xy < 2; ++xy)
     {
@@ -525,7 +525,7 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& q
             auto u = cg[xy].id(cg[xy].source(a)); 
             markers.at(u) = true; 
         }
-        dreamplaceAssert(std::find(markers.begin(), markers.end(), 0) == markers.end());
+        qplacerAssert(std::find(markers.begin(), markers.end(), 0) == markers.end());
     }
 #endif
 }
@@ -544,7 +544,7 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
                             const std::vector<int>& fixed_qubits,
                             int num_spacing){
                                 
-    dreamplacePrint(kINFO, "Legalize movable qubits with linear programming on constraint graphs\n");
+    qplacerPrint(kINFO, "Legalize movable qubits with linear programming on constraint graphs\n");
 
     // numeric type can be int, long ,double, not never use float. 
     // It will cause incorrect results and introduce overlap. 
@@ -576,7 +576,7 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
         T width = db.node_size_x[node_id];
         T height = db.node_size_y[node_id];
 
-        dreamplaceSPrint(kNONE, buf, "x%d", node_id);
+        qplacerSPrint(kNONE, buf, "x%d", node_id);
         model_hcg.addVariable(db.xl, db.xh-width, limbo::solvers::CONTINUOUS, buf);
         model_vcg.addVariable(db.yl, db.yh-height, limbo::solvers::CONTINUOUS, buf);
     }
@@ -585,7 +585,7 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
     {
         int node_id = qubits[i];
 
-        dreamplaceSPrint(kNONE, buf, "l%d", node_id);
+        qplacerSPrint(kNONE, buf, "l%d", node_id);
         model_hcg.addVariable(0, db.xh, limbo::solvers::CONTINUOUS, buf);
         model_vcg.addVariable(0, db.yh, limbo::solvers::CONTINUOUS, buf);
     }
@@ -594,7 +594,7 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
     {
         int node_id = qubits[i];
 
-        dreamplaceSPrint(kNONE, buf, "u%d", node_id);
+        qplacerSPrint(kNONE, buf, "u%d", node_id);
         model_hcg.addVariable(0, db.xh, limbo::solvers::CONTINUOUS, buf);
         model_vcg.addVariable(0, db.yh, limbo::solvers::CONTINUOUS, buf);
     }
@@ -621,9 +621,9 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
                 {
                     auto var2 = model.variable(u);
 
-                    dreamplaceAssertMsg(model.addConstraint(var1 - var2 <= -(width1 + min_spacing)),
+                    qplacerAssertMsg(model.addConstraint(var1 - var2 <= -(width1 + min_spacing)),
                     "failed to add constraint between qubits %d and %d", v, u); /// minimum spacing
-                    // dreamplaceAssertMsg(model.addConstraint(var1 - var2 <= -width1), "failed to add %s constraint", (xy == kX)? "HCG" : "VCG");
+
                 }
                 else if (u != source && u != terminal) // u is fixed cell 
                 {
@@ -658,18 +658,18 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
         auto var_x = model_hcg.variable(i); 
         auto var_l = model_hcg.variable(i + qubits.size());
         auto var_u = model_hcg.variable(i + qubits.size()*2);
-        dreamplaceAssertMsg(model_hcg.addConstraint(var_l - var_x <= 0), "failed to add HCG lower bound constraint");
+        qplacerAssertMsg(model_hcg.addConstraint(var_l - var_x <= 0), "failed to add HCG lower bound constraint");
         model_hcg.updateVariableUpperBound(var_l, xl);
-        dreamplaceAssertMsg(model_hcg.addConstraint(var_u - var_x >= 0), "failed to add HCG upper bound constraint");
+        qplacerAssertMsg(model_hcg.addConstraint(var_u - var_x >= 0), "failed to add HCG upper bound constraint");
         model_hcg.updateVariableLowerBound(var_u, xl);
         obj_hcg += var_u - var_l;
 
         var_x = model_vcg.variable(i); 
         var_l = model_vcg.variable(i + qubits.size());
         var_u = model_vcg.variable(i + qubits.size()*2);
-        dreamplaceAssertMsg(model_vcg.addConstraint(var_l - var_x <= 0), "failed to add VCG lower bound constraint");
+        qplacerAssertMsg(model_vcg.addConstraint(var_l - var_x <= 0), "failed to add VCG lower bound constraint");
         model_vcg.updateVariableUpperBound(var_l, yl);
-        dreamplaceAssertMsg(model_vcg.addConstraint(var_u - var_x >= 0), "failed to add VCG upper bound constraint");
+        qplacerAssertMsg(model_vcg.addConstraint(var_u - var_x >= 0), "failed to add VCG upper bound constraint");
         model_vcg.updateVariableLowerBound(var_u, yl);
         obj_vcg += var_u - var_l;
     }
@@ -689,7 +689,7 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
         solver_alg_type alg; 
         solver_type solver (&model_hcg); 
         auto status = solver(&alg);
-        dreamplaceAssertMsg(status == limbo::solvers::OPTIMAL, "Horizontal graph not solved optimally");
+        qplacerAssertMsg(status == limbo::solvers::OPTIMAL, "Horizontal graph not solved optimally");
 
         for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
         {
@@ -702,7 +702,7 @@ void lpLegalizeGraphLauncher(LegalizationDB<T> db,
         solver_alg_type alg; 
         solver_type solver (&model_vcg); 
         auto status = solver(&alg);
-        dreamplaceAssertMsg(status == limbo::solvers::OPTIMAL, "Vertical graph not solved optimally");
+        qplacerAssertMsg(status == limbo::solvers::OPTIMAL, "Vertical graph not solved optimally");
 
         for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
         {
@@ -722,7 +722,7 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
         const std::vector<int>& qubits, 
         const std::vector<int>& fixed_qubits,
         int num_spacing){
-    dreamplacePrint(kINFO, "Legalize movable qubits with linear programming on constraint graphs\n");
+    qplacerPrint(kINFO, "Legalize movable qubits with linear programming on constraint graphs\n");
 
     // numeric type can be int, long ,double, not never use float. 
     // It will cause incorrect results and introduce overlap. 
@@ -748,7 +748,7 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
         T width = db.node_size_x[node_id];
         T height = db.node_size_y[node_id];
 
-        dreamplaceSPrint(kNONE, buf, "x%d", node_id);
+        qplacerSPrint(kNONE, buf, "x%d", node_id);
         model_hcg.addVariable(db.xl, db.xh-width, limbo::solvers::CONTINUOUS, buf);
         model_vcg.addVariable(db.yl, db.yh-height, limbo::solvers::CONTINUOUS, buf);
     }
@@ -757,7 +757,7 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
     {
         int node_id = qubits[i];
 
-        dreamplaceSPrint(kNONE, buf, "l%d", node_id);
+        qplacerSPrint(kNONE, buf, "l%d", node_id);
         model_hcg.addVariable(0, db.xh, limbo::solvers::CONTINUOUS, buf);
         model_vcg.addVariable(0, db.yh, limbo::solvers::CONTINUOUS, buf);
     }
@@ -766,7 +766,7 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
     {
         int node_id = qubits[i];
 
-        dreamplaceSPrint(kNONE, buf, "u%d", node_id);
+        qplacerSPrint(kNONE, buf, "u%d", node_id);
         model_hcg.addVariable(0, db.xh, limbo::solvers::CONTINUOUS, buf);
         model_vcg.addVariable(0, db.yh, limbo::solvers::CONTINUOUS, buf);
     }
@@ -780,15 +780,15 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
             auto var2 = model_hcg.variable(j);
             if (xl1 < xl2)
             {
-                dreamplaceAssertMsg(model_hcg.addConstraint(var1 - var2 <= -(width1 + min_spacing)), 
+                qplacerAssertMsg(model_hcg.addConstraint(var1 - var2 <= -(width1 + min_spacing)), 
                 "failed to add HCG constraint");    /// minimum spacing
-                // dreamplaceAssertMsg(model_hcg.addConstraint(var1 - var2 <= -width1), "failed to add HCG constraint");
+                // qplacerAssertMsg(model_hcg.addConstraint(var1 - var2 <= -width1), "failed to add HCG constraint");
             }
             else 
             {
-                dreamplaceAssertMsg(model_hcg.addConstraint(var2 - var1 <= -(width2 + min_spacing)), 
+                qplacerAssertMsg(model_hcg.addConstraint(var2 - var1 <= -(width2 + min_spacing)), 
                 "failed to add HCG constraint");    /// minimum spacing
-                // dreamplaceAssertMsg(model_hcg.addConstraint(var2 - var1 <= -width2), "failed to add HCG constraint");
+                // qplacerAssertMsg(model_hcg.addConstraint(var2 - var1 <= -width2), "failed to add HCG constraint");
             }
         }
         else // j is fixed qubit 
@@ -796,12 +796,12 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
             if (xl1 < xl2)
             {
                 model_hcg.updateVariableUpperBound(var1, floor(xl2 - width1));
-                //dreamplacePrint(kDEBUG, "HCG: %s <= x%d (%g) - %g\n", model_hcg.variableName(var1).c_str(), j, xl2, width1);
+                //qplacerPrint(kDEBUG, "HCG: %s <= x%d (%g) - %g\n", model_hcg.variableName(var1).c_str(), j, xl2, width1);
             }
             else 
             {
                 model_hcg.updateVariableLowerBound(var1, ceil(xl2 + width2));
-                //dreamplacePrint(kDEBUG, "HCG: %s >= x%d (%g) + %g\n", model_hcg.variableName(var1).c_str(), j, xl2, width2);
+                //qplacerPrint(kDEBUG, "HCG: %s >= x%d (%g) + %g\n", model_hcg.variableName(var1).c_str(), j, xl2, width2);
             }
         }
     };
@@ -812,16 +812,16 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
             auto var2 = model_vcg.variable(j);
             if (yl1 < yl2)
             {
-                dreamplaceAssertMsg(model_vcg.addConstraint(var1 - var2 <= -(height1 + min_spacing)), 
+                qplacerAssertMsg(model_vcg.addConstraint(var1 - var2 <= -(height1 + min_spacing)), 
                 "failed to add VCG constraint");
-                // dreamplaceAssertMsg(model_vcg.addConstraint(var1 - var2 <= -height1), 
+                // qplacerAssertMsg(model_vcg.addConstraint(var1 - var2 <= -height1), 
                 // "failed to add VCG constraint");
             }
             else 
             {
-                dreamplaceAssertMsg(model_vcg.addConstraint(var2 - var1 <= -(height2 + min_spacing)), 
+                qplacerAssertMsg(model_vcg.addConstraint(var2 - var1 <= -(height2 + min_spacing)), 
                 "failed to add VCG constraint");
-                // dreamplaceAssertMsg(model_vcg.addConstraint(var2 - var1 <= -height2), 
+                // qplacerAssertMsg(model_vcg.addConstraint(var2 - var1 <= -height2), 
                 // "failed to add VCG constraint");
             }
         }
@@ -830,12 +830,12 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
             if (yl1 < yl2)
             {
                 model_vcg.updateVariableUpperBound(var1, floor(yl2 - height1)); 
-                //dreamplacePrint(kDEBUG, "VCG: %s <= x%d (%g) - %g\n", model_vcg.variableName(var1).c_str(), j, yl2, height1);
+                //qplacerPrint(kDEBUG, "VCG: %s <= x%d (%g) - %g\n", model_vcg.variableName(var1).c_str(), j, yl2, height1);
             }
             else 
             {
                 model_vcg.updateVariableLowerBound(var1, ceil(yl2 + height2));
-                //dreamplacePrint(kDEBUG, "VCG: %s >= x%d (%g) + %g\n", model_vcg.variableName(var1).c_str(), j, yl2, height2);
+                //qplacerPrint(kDEBUG, "VCG: %s >= x%d (%g) + %g\n", model_vcg.variableName(var1).c_str(), j, yl2, height2);
             }
         }
     };
@@ -928,18 +928,18 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
         auto var_x = model_hcg.variable(i); 
         auto var_l = model_hcg.variable(i + qubits.size());
         auto var_u = model_hcg.variable(i + qubits.size()*2);
-        dreamplaceAssertMsg(model_hcg.addConstraint(var_l - var_x <= 0), "failed to add HCG lower bound constraint");
+        qplacerAssertMsg(model_hcg.addConstraint(var_l - var_x <= 0), "failed to add HCG lower bound constraint");
         model_hcg.updateVariableUpperBound(var_l, xl);
-        dreamplaceAssertMsg(model_hcg.addConstraint(var_u - var_x >= 0), "failed to add HCG upper bound constraint");
+        qplacerAssertMsg(model_hcg.addConstraint(var_u - var_x >= 0), "failed to add HCG upper bound constraint");
         model_hcg.updateVariableLowerBound(var_u, xl);
         obj_hcg += var_u - var_l;
 
         var_x = model_vcg.variable(i); 
         var_l = model_vcg.variable(i + qubits.size());
         var_u = model_vcg.variable(i + qubits.size()*2);
-        dreamplaceAssertMsg(model_vcg.addConstraint(var_l - var_x <= 0), "failed to add VCG lower bound constraint");
+        qplacerAssertMsg(model_vcg.addConstraint(var_l - var_x <= 0), "failed to add VCG lower bound constraint");
         model_vcg.updateVariableUpperBound(var_l, yl);
-        dreamplaceAssertMsg(model_vcg.addConstraint(var_u - var_x >= 0), "failed to add VCG upper bound constraint");
+        qplacerAssertMsg(model_vcg.addConstraint(var_u - var_x >= 0), "failed to add VCG upper bound constraint");
         model_vcg.updateVariableLowerBound(var_u, yl);
         obj_vcg += var_u - var_l;
     }
@@ -959,7 +959,7 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
         solver_alg_type alg; 
         solver_type solver (&model_hcg); 
         auto status = solver(&alg);
-        dreamplaceAssertMsg(status == limbo::solvers::OPTIMAL, "Horizontal graph not solved optimally");
+        qplacerAssertMsg(status == limbo::solvers::OPTIMAL, "Horizontal graph not solved optimally");
 
         for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
         {
@@ -972,7 +972,7 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
         solver_alg_type alg; 
         solver_type solver (&model_vcg); 
         auto status = solver(&alg);
-        dreamplaceAssertMsg(status == limbo::solvers::OPTIMAL, "Vertical graph not solved optimally");
+        qplacerAssertMsg(status == limbo::solvers::OPTIMAL, "Vertical graph not solved optimally");
 
         for (unsigned int i = 0, ie = qubits.size(); i < ie; ++i)
         {
@@ -987,6 +987,6 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
 #endif
 }
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

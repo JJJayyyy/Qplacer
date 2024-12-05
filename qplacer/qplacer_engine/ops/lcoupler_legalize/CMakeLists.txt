@@ -2,7 +2,7 @@ set(OP_NAME lcoupler_legalize)
 
 set(TARGET_NAME ${OP_NAME})
 set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/..)
-set(LINK_LIBS utility_cxx OpenMP::OpenMP_CXX)
+set(LINK_LIBS qplacer_utility_cxx OpenMP::OpenMP_CXX)
 
 add_pytorch_extension(${TARGET_NAME}_cpp 
   src/greedy_legalize.cpp

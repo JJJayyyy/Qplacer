@@ -1,11 +1,5 @@
-/**
- * @file   torch.h
- * @author Yibo Lin
- * @date   Mar 2019
- * @brief  Required heads from torch
- */
-#ifndef _DREAMPLACE_UTILITY_TORCH_H
-#define _DREAMPLACE_UTILITY_TORCH_H
+#ifndef _QPLACER_UTILITY_TORCH_H
+#define _QPLACER_UTILITY_TORCH_H
 
 /// As torch may change the header inclusion conventions, it is better to manage
 /// it in a consistent way.
@@ -14,15 +8,15 @@
 
 #if TORCH_VERSION_MAJOR == 1 && TORCH_VERSION_MINOR < 3
 
-#define DREAMPLACE_TENSOR_DATA_PTR(TENSOR, TYPE) \
+#define QPLACER_TENSOR_DATA_PTR(TENSOR, TYPE) \
   ((TENSOR.defined())? TENSOR.data<TYPE>() : nullptr)
-#define DREAMPLACE_TENSOR_SCALARTYPE(TENSOR) TENSOR.type().scalarType()
+#define QPLACER_TENSOR_SCALARTYPE(TENSOR) TENSOR.type().scalarType()
 
 #else
 
-#define DREAMPLACE_TENSOR_DATA_PTR(TENSOR, TYPE) \
+#define QPLACER_TENSOR_DATA_PTR(TENSOR, TYPE) \
   ((TENSOR.defined())? TENSOR.data_ptr<TYPE>() : nullptr)
-#define DREAMPLACE_TENSOR_SCALARTYPE(TENSOR) TENSOR.scalar_type()
+#define QPLACER_TENSOR_SCALARTYPE(TENSOR) TENSOR.scalar_type()
 
 #endif
 
@@ -41,12 +35,12 @@
 
 #endif
 
-#define DREAMPLACE_PRIVATE_CASE_TYPE(NAME, enum_type, type, ...) \
+#define QPLACER_PRIVATE_CASE_TYPE(NAME, enum_type, type, ...) \
   AT_PRIVATE_CASE_TYPE(NAME, enum_type, type, __VA_ARGS__)
 
 #else
 
-#define DREAMPLACE_PRIVATE_CASE_TYPE(NAME, enum_type, type, ...) \
+#define QPLACER_PRIVATE_CASE_TYPE(NAME, enum_type, type, ...) \
   AT_PRIVATE_CASE_TYPE(enum_type, type, __VA_ARGS__)
 
 #endif
@@ -75,17 +69,14 @@
 #define CHECK_CONTIGUOUS(x) \
   AT_ASSERTM(x.is_contiguous(), #x "must be contiguous")
 
-/// As the API for torch changes, customize a DREAMPlace version to remove
-/// warnings
+/// As the API for torch changes, customize a version to remove warnings
 
-#include "utility/src/torch_fft_api.h"
-
-#define DREAMPLACE_DISPATCH_FLOATING_TYPES(TENSOR, NAME, ...)                         \
+#define QPLACER_DISPATCH_FLOATING_TYPES(TENSOR, NAME, ...)                         \
   [&] {                                                                               \
-    at::ScalarType _st = DREAMPLACE_TENSOR_SCALARTYPE(TENSOR);                        \
+    at::ScalarType _st = QPLACER_TENSOR_SCALARTYPE(TENSOR);                        \
     switch (_st) {                                                                    \
-      DREAMPLACE_PRIVATE_CASE_TYPE(NAME, at::ScalarType::Double, double, __VA_ARGS__) \
-      DREAMPLACE_PRIVATE_CASE_TYPE(NAME, at::ScalarType::Float, float, __VA_ARGS__)   \
+      QPLACER_PRIVATE_CASE_TYPE(NAME, at::ScalarType::Double, double, __VA_ARGS__) \
+      QPLACER_PRIVATE_CASE_TYPE(NAME, at::ScalarType::Float, float, __VA_ARGS__)   \
       default:                                                                        \
         AT_ERROR(#NAME, " not implemented for '", toString(_st), "'");                \
     }                                                                                 \
@@ -93,13 +84,13 @@
 
 /// I remove the support to Char, since int8_t does not compile for CUDA
 /// char does not compile for ATen either
-#define DREAMPLACE_DISPATCH_INT_FLOAT_TYPES(TENSOR, NAME, ...)                        \
+#define QPLACER_DISPATCH_INT_FLOAT_TYPES(TENSOR, NAME, ...)                        \
   [&] {                                                                               \
-    at::ScalarType _st = DREAMPLACE_TENSOR_SCALARTYPE(TENSOR);                        \
+    at::ScalarType _st = QPLACER_TENSOR_SCALARTYPE(TENSOR);                        \
     switch (_st) {                                                                    \
-      DREAMPLACE_PRIVATE_CASE_TYPE(NAME, at::ScalarType::Float, float, __VA_ARGS__)   \
-      DREAMPLACE_PRIVATE_CASE_TYPE(NAME, at::ScalarType::Double, double, __VA_ARGS__) \
-      DREAMPLACE_PRIVATE_CASE_TYPE(NAME, at::ScalarType::Int, int, __VA_ARGS__)       \
+      QPLACER_PRIVATE_CASE_TYPE(NAME, at::ScalarType::Float, float, __VA_ARGS__)   \
+      QPLACER_PRIVATE_CASE_TYPE(NAME, at::ScalarType::Double, double, __VA_ARGS__) \
+      QPLACER_PRIVATE_CASE_TYPE(NAME, at::ScalarType::Int, int, __VA_ARGS__)       \
       default:                                                                        \
         AT_ERROR(#NAME, " not implemented for '", at::toString(_st), "'");            \
     }                                                                                 \

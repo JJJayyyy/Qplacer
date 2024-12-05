@@ -4,15 +4,15 @@
  * @date   Oct 2018
  */
 
-#ifndef DREAMPLACE_BIN_ASSIGNMENT_H
-#define DREAMPLACE_BIN_ASSIGNMENT_H
+#ifndef QPLACER_BIN_ASSIGNMENT_H
+#define QPLACER_BIN_ASSIGNMENT_H
 
 #include <cmath>
 #include <vector>
 #include "blank.h"
 #include "utility/src/utils.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 template <typename T>
 void distributeCells2BinsCPU(const LegalizationDB<T>& db, const T* x,
@@ -191,6 +191,6 @@ void computeBinCapacityCPU(
   }
 }
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

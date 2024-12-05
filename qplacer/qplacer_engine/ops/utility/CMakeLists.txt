@@ -1,4 +1,4 @@
-set(OP_NAME util)
+set(OP_NAME qplacer_utility)
 
 file(GLOB CPP_SOURCES 
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
@@ -7,9 +7,7 @@ file(GLOB CPP_SOURCES
 
 set(TARGET_NAME ${OP_NAME})
 
-set(INCLUDE_DIRS 
-  ${CMAKE_CURRENT_SOURCE_DIR}/..
-  )
+set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 set(LINK_LIBS "")
 

@@ -1,17 +1,11 @@
-/**
- * @file   LegalizationDB.h
- * @author Yibo Lin
- * @date   Nov 2019
- */
-
-#ifndef _DREAMPLACE_UTILITY_LEGALIZATIONDB_H
-#define _DREAMPLACE_UTILITY_LEGALIZATIONDB_H
+#ifndef _QPLACER_UTILITY_LEGALIZATIONDB_H
+#define _QPLACER_UTILITY_LEGALIZATIONDB_H
 
 #include <algorithm>
 #include "legality_check/src/legality_check.h"
 #include "utility/src/utils.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 /// @brief a wrapper class of required data for legalization
 template <typename T>
@@ -55,7 +49,7 @@ struct LegalizationDB {
 	/// legalization.
 	inline bool is_dummy_fixed(int node_id) const {
 #ifdef DEBUG
-    dreamplaceAssert(node_id < db.num_nodes);
+    qplacerAssert(node_id < db.num_nodes);
 #endif
     T height = node_size_y[node_id];
     return (node_id < num_movable_nodes && height > (row_height * DUMMY_FIXED_NUM_ROWS));
@@ -81,6 +75,6 @@ struct LegalizationDB {
 	}
 };
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

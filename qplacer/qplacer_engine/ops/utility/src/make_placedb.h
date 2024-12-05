@@ -1,7 +1,7 @@
-#ifndef _DREAMPLACE_UTILITY_DETAILEDPLACEDBUTILS_H
-#define _DREAMPLACE_UTILITY_DETAILEDPLACEDBUTILS_H
+#ifndef _QPLACER_UTILITY_DETAILEDPLACEDBUTILS_H
+#define _QPLACER_UTILITY_DETAILEDPLACEDBUTILS_H
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 template <typename>
 struct DetailedPlaceDB;
@@ -70,28 +70,28 @@ DetailedPlaceDB<T> make_placedb(
   DetailedPlaceDB<T> db;
   int num_nodes = init_pos.numel() / 2;
 
-  db.init_x = DREAMPLACE_TENSOR_DATA_PTR(init_pos, T);
-  db.init_y = DREAMPLACE_TENSOR_DATA_PTR(init_pos, T) + num_nodes;
-  db.node_size_x = DREAMPLACE_TENSOR_DATA_PTR(node_size_x, T);
-  db.node_size_y = DREAMPLACE_TENSOR_DATA_PTR(node_size_y, T);
-  db.flat_region_boxes = DREAMPLACE_TENSOR_DATA_PTR(flat_region_boxes, T);
+  db.init_x = QPLACER_TENSOR_DATA_PTR(init_pos, T);
+  db.init_y = QPLACER_TENSOR_DATA_PTR(init_pos, T) + num_nodes;
+  db.node_size_x = QPLACER_TENSOR_DATA_PTR(node_size_x, T);
+  db.node_size_y = QPLACER_TENSOR_DATA_PTR(node_size_y, T);
+  db.flat_region_boxes = QPLACER_TENSOR_DATA_PTR(flat_region_boxes, T);
   db.flat_region_boxes_start =
-      DREAMPLACE_TENSOR_DATA_PTR(flat_region_boxes_start, int);
+      QPLACER_TENSOR_DATA_PTR(flat_region_boxes_start, int);
   db.node2fence_region_map =
-      DREAMPLACE_TENSOR_DATA_PTR(node2fence_region_map, int);
-  db.x = DREAMPLACE_TENSOR_DATA_PTR(pos, T);
-  db.y = DREAMPLACE_TENSOR_DATA_PTR(pos, T) + num_nodes;
-  db.flat_net2pin_map = DREAMPLACE_TENSOR_DATA_PTR(flat_net2pin_map, int);
+      QPLACER_TENSOR_DATA_PTR(node2fence_region_map, int);
+  db.x = QPLACER_TENSOR_DATA_PTR(pos, T);
+  db.y = QPLACER_TENSOR_DATA_PTR(pos, T) + num_nodes;
+  db.flat_net2pin_map = QPLACER_TENSOR_DATA_PTR(flat_net2pin_map, int);
   db.flat_net2pin_start_map =
-      DREAMPLACE_TENSOR_DATA_PTR(flat_net2pin_start_map, int);
-  db.pin2net_map = DREAMPLACE_TENSOR_DATA_PTR(pin2net_map, int);
-  db.flat_node2pin_map = DREAMPLACE_TENSOR_DATA_PTR(flat_node2pin_map, int);
+      QPLACER_TENSOR_DATA_PTR(flat_net2pin_start_map, int);
+  db.pin2net_map = QPLACER_TENSOR_DATA_PTR(pin2net_map, int);
+  db.flat_node2pin_map = QPLACER_TENSOR_DATA_PTR(flat_node2pin_map, int);
   db.flat_node2pin_start_map =
-      DREAMPLACE_TENSOR_DATA_PTR(flat_node2pin_start_map, int);
-  db.pin2node_map = DREAMPLACE_TENSOR_DATA_PTR(pin2node_map, int);
-  db.pin_offset_x = DREAMPLACE_TENSOR_DATA_PTR(pin_offset_x, T);
-  db.pin_offset_y = DREAMPLACE_TENSOR_DATA_PTR(pin_offset_y, T);
-  db.net_mask = DREAMPLACE_TENSOR_DATA_PTR(net_mask, unsigned char);
+      QPLACER_TENSOR_DATA_PTR(flat_node2pin_start_map, int);
+  db.pin2node_map = QPLACER_TENSOR_DATA_PTR(pin2node_map, int);
+  db.pin_offset_x = QPLACER_TENSOR_DATA_PTR(pin_offset_x, T);
+  db.pin_offset_y = QPLACER_TENSOR_DATA_PTR(pin_offset_y, T);
+  db.net_mask = QPLACER_TENSOR_DATA_PTR(net_mask, unsigned char);
   db.xl = xl;
   db.yl = yl;
   db.xh = xh;
@@ -158,16 +158,16 @@ LegalizationDB<T> make_placedb(
     LegalizationDB<T> db;
     int num_nodes = init_pos.numel() / 2;
 
-    db.init_x = DREAMPLACE_TENSOR_DATA_PTR(init_pos, T);
-    db.init_y = DREAMPLACE_TENSOR_DATA_PTR(init_pos, T) + num_nodes;
-    db.node_size_x = DREAMPLACE_TENSOR_DATA_PTR(node_size_x, T);
-    db.node_size_y = DREAMPLACE_TENSOR_DATA_PTR(node_size_y, T);
-    db.node_weights = DREAMPLACE_TENSOR_DATA_PTR(node_weights, T);
-    db.flat_region_boxes = DREAMPLACE_TENSOR_DATA_PTR(flat_region_boxes, T);
-    db.flat_region_boxes_start = DREAMPLACE_TENSOR_DATA_PTR(flat_region_boxes_start, int);
-    db.node2fence_region_map = DREAMPLACE_TENSOR_DATA_PTR(node2fence_region_map, int);
-    db.x = DREAMPLACE_TENSOR_DATA_PTR(pos, T);
-    db.y = DREAMPLACE_TENSOR_DATA_PTR(pos, T) + num_nodes;
+    db.init_x = QPLACER_TENSOR_DATA_PTR(init_pos, T);
+    db.init_y = QPLACER_TENSOR_DATA_PTR(init_pos, T) + num_nodes;
+    db.node_size_x = QPLACER_TENSOR_DATA_PTR(node_size_x, T);
+    db.node_size_y = QPLACER_TENSOR_DATA_PTR(node_size_y, T);
+    db.node_weights = QPLACER_TENSOR_DATA_PTR(node_weights, T);
+    db.flat_region_boxes = QPLACER_TENSOR_DATA_PTR(flat_region_boxes, T);
+    db.flat_region_boxes_start = QPLACER_TENSOR_DATA_PTR(flat_region_boxes_start, int);
+    db.node2fence_region_map = QPLACER_TENSOR_DATA_PTR(node2fence_region_map, int);
+    db.x = QPLACER_TENSOR_DATA_PTR(pos, T);
+    db.y = QPLACER_TENSOR_DATA_PTR(pos, T) + num_nodes;
     db.xl = xl;
     db.yl = yl;
     db.xh = xh;
@@ -188,6 +188,6 @@ LegalizationDB<T> make_placedb(
   return db;
 }
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

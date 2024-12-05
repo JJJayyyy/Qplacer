@@ -1,5 +1,5 @@
-#ifndef DREAMPLACE_LEGALIZE_FUNCTION_CPU_H
-#define DREAMPLACE_LEGALIZE_FUNCTION_CPU_H
+#ifndef QPLACER_LEGALIZE_FUNCTION_CPU_H
+#define QPLACER_LEGALIZE_FUNCTION_CPU_H
 
 #include "utility/src/torch.h"
 #include "utility/src/utils.h"
@@ -12,7 +12,7 @@
 #include "lcoupler_legalize/src/merge_bin_cpu.h"
 #include "lcoupler_legalize/src/status_summary_cpu.h"
 
-DREAMPLACE_BEGIN_NAMESPACE
+QPLACER_BEGIN_NAMESPACE
 
 template <typename T>
 void legalizeBinCPU(
@@ -41,6 +41,6 @@ int greedyLegalizationCPU(const LegalizationDB<T>& db, const T* init_x,
                           const std::vector<std::vector<int>> node_in_group
                           );
 
-DREAMPLACE_END_NAMESPACE
+QPLACER_END_NAMESPACE
 
 #endif

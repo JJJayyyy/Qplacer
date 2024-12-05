@@ -1,6 +1,6 @@
-##
+#
 # @file   PlaceDrawer.py
-# @brief  A python implementation of placement drawer as an alternative when cairo C/C++ API is not available.
+# @brief  A python implementation of placement drawer
 #
 
 import sys
@@ -13,7 +13,7 @@ import numpy as np
 
 class PlaceDrawer(object):
     """
-    @brief A python implementation of placement drawer as an alternative when cairo C/C++ API is not available. 
+    @brief A python implementation of placement drawer.
     """
     @staticmethod
     def forward(pos,
