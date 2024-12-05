@@ -4,6 +4,8 @@ set -euo pipefail
 
 DEST_DIR=$(pwd)
 BUILD_DIR="../build"
+NUM_CORES=10
+
 if [ ! -d "$BUILD_DIR" ]; then
     mkdir -p "$BUILD_DIR"
 fi
@@ -18,7 +20,9 @@ else
 fi
 
 cmake .. -DCMAKE_INSTALL_PREFIX="${DEST_DIR}/operators" -DINSTALL_BACKUP=${INSTALL_BACKUP}
-make
+echo "Compiling with ${NUM_CORES} cores..."
+make -j"${NUM_CORES}"
+# make
 make install
 
 cd "${DEST_DIR}"

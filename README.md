@@ -15,7 +15,8 @@ Researchers on quantum hardware device design, quantum device manufacture, and q
 #### Sample Result
 <p align="center">
     <img src="images/demo.gif" width="25%">
-    <img src="images/eagle.png" width="68%">
+    <!-- <img src="images/eagle.png" width="68%"> -->
+    <img src="images/falcon.png" width="44%">
 </p>
 
 
