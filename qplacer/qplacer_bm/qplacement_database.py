@@ -23,9 +23,13 @@ qubit_num_dict = {
 }
 
 class QplacementDatabase:
-    def __init__(self):
-        self.metal_design = designs.DesignPlanar()
-        self.metal_design.overwrite_enabled = True
+    def __init__(self, chip_size_x=10000, chip_size_y=10000):
+        self.metal_design = designs.DesignPlanar(overwrite_enabled=True)
+        self.metal_design.chips['main']['size']['size_x'] = f"{chip_size_x}um" 
+        self.metal_design.chips['main']['size']['size_y'] = f"{chip_size_y}um"
+        self.metal_design.chips['main']['size']['center_x'] = f"{chip_size_x/2}um" 
+        self.metal_design.chips['main']['size']['center_y'] = f"{chip_size_y/2}um"
+
         self.c_graph = None
         self.c_graph_pos_map = dict()
 

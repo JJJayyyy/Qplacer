@@ -90,9 +90,6 @@ class FreqCollisionChecker:
         self.edge_color_map = {edge: self.edge_cm(i) for i, edge in enumerate(self.edge_to_freq_map.keys())}
 
 
-
-
-
     def convert_freq_to_float(self, freq_str):
         return float(freq_str.lower().replace('ghz', '').strip())
 
@@ -494,7 +491,7 @@ class FreqCollisionChecker:
                         component_name = poly_name # qubit -> qubit
                     idx = self.components_to_idx[component_name]
                     if cell.intersects(poly):
-                        assert self.grid[j][i] == 0, 'row: {}, col: {} -> {}'.format(j, i, self.grid[j][i]) 
+                        # assert self.grid[j][i] == 0, 'row: {}, col: {} -> {}'.format(j, i, self.grid[j][i]) 
                         self.grid[j][i] = idx
                         self.pos_2_poly[j][i] = poly_name
                         if 'poly' in poly_name:

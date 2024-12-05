@@ -1,7 +1,5 @@
 from qiskit_metal.qlibrary import QRoute, BaseQubit
 from qiskit_metal.qlibrary.qubits.transmon_pocket import TransmonPocket
-# from Qplacer.route import PolygonConnector
-# from Qplacer.route import RouteMixed
 
 from collections import defaultdict, OrderedDict
 from shapely.geometry import Polygon, LineString
@@ -13,13 +11,10 @@ import string
 import uuid
 import math
 import os
-os.environ['QISKIT_METAL_HEADLESS'] = '1'
+# os.environ['QISKIT_METAL_HEADLESS'] = '1'
 
 from qplacer_bm.utils import create_polygon
 
-
-
-pin_to_loc = {'nw': (-1, +1), 'sw': (-1, -1), 'se': (+1, -1), 'ne': (+1, +1)}
 
 CONNETION_FORMAT = 'retangle'
 # CONNETION_FORMAT = 'line'
@@ -77,7 +72,7 @@ class DesignFormator:
                     pin: dict(loc_W=loc_w, loc_H=loc_h, 
                               pad_width='80um', 
                               pad_gap='50um', 
-                              cpw_extend='0um') for pin, (loc_w, loc_h) in pin_to_loc.items()
+                              cpw_extend='0um') for pin, (loc_w, loc_h) in self.params.pin_to_loc.items()
                 },
             )
             qubit = TransmonPocket(self.db.metal_design, q_name, options=q_options)

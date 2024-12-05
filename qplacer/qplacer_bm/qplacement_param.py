@@ -60,7 +60,9 @@ class QplacementParam:
         self.placer_dir = placer_dir
         self.file_paths = dict()
         self.file_name = "test"
-        self.debugging_dir = None
+        self.debugging_dir = ''
+
+        self.pin_to_loc = {'nw': (-1, +1), 'sw': (-1, -1), 'se': (+1, -1), 'ne': (+1, +1)}
 
 
     def __getstate__(self):

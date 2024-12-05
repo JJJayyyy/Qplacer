@@ -71,6 +71,17 @@ def parse_lef_file(lef_file_path, factor):
     return macros
 
 
+def get_edge_wirelength(freq):
+    # L = v_0/2f    v_0 = 1.3e8
+    if isinstance(freq, float):
+        return 1.3e8*1000/(2*freq)
+    elif isinstance(freq, str):
+        return 65/float(freq.lower().replace('ghz', '').strip())
+    else:
+        raise Exception(f"Type {type(freq)} is currently not acceptable")
+
+
+
 def modify_def_positions(org_def_file_path, def_file_path, new_positions):
     """
     Modifies the positions of components in a DEF file.
@@ -211,6 +222,7 @@ def load_testcase(topology, topology_setup_dir, suffix='wp_wf'):
 
         testcase["lef"] = testcase['params'].file_paths["lef"]
         testcase["def"] = f"results/{testcase_name}/{testcase_name}.gp.def"
+        testcase["lg_def"] = f"results/{testcase_name}/{testcase_name}.lg.def"
         testcase["post_def"] = f"test/{topology}/{suffix}/{testcase_name}.post.def"
 
         for f in ['lef', 'def']:

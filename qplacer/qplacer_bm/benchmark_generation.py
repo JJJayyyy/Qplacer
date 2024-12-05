@@ -89,7 +89,7 @@ class BenchmarkGenerator:
                                       random_center_init_flag = self.bm_setting["random_center_init_flag"],
                                       )
         self.params.debugging_dir = self.debugging_dir
-        self.db = QplacementDatabase()
+        self.db = QplacementDatabase(chip_size_x=substrate_area[0], chip_size_y=substrate_area[1])
         area_x, area_y = substrate_area[0], substrate_area[1]
         file_name = f'{topology}_{self.suffix}'
         benchmark_dir = f"benchmarks/{self.params.benchmark_dir}/{file_name}"
