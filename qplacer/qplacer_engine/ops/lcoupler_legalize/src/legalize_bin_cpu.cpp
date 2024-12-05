@@ -1,4 +1,3 @@
-// #include "function_cpu.h"
 #include "lcoupler_legalize/src/function_cpu.h"
 
 QPLACER_BEGIN_NAMESPACE
@@ -57,20 +56,15 @@ void updateTouchedBlanksCPU(
             int loc_bi = -1;
             for (unsigned int bi = 0; bi < blanks.size(); ++bi) {
                 Blank<T>& blk = blanks.at(bi);
-                // std::cout << "new_blank.xl: " << new_blank.xl << ", new_blank.xh: " << new_blank.xh 
-                //     << " | blk.xl: " << blk.xl << ", blk.xh: " << blk.xh << std::endl;
                 if (blk.xl <= new_blank.xl && new_blank.xh <= blk.xh){
-                    // std::cout << "new blank in the middle, not add and remove" << std::endl;
                     remove_bi = -1;
                     loc_bi = -1;
                     break;
                 } else if (new_blank.xl == blk.xh) {
                     blk.xh = new_blank.xh;
-                    // std::cout << "pre touch" << std::endl;
                     pre_touch_bi = bi;
                     loc_bi=-1;  // reset loc_bi if latter blank modified
                 } else if (new_blank.xh == blk.xl){
-                    // std::cout << "post touch" << std::endl;
                     if (pre_touch_bi > -1){     // touch two blanks pre_blk-blk-post_blk -> preblk
                         blanks.at(pre_touch_bi).xh = blk.xh;
                         remove_bi = bi;         // erase post_touch bi
@@ -80,14 +74,12 @@ void updateTouchedBlanksCPU(
                     loc_bi=-1;  // reset loc_bi if latter blank modified
                     break;      // post touch represents following block will not need to check
                 } else if (new_blank.xh < blk.xl){
-                    // std::cout << "new blk before this blk" << std::endl;
                     if (pre_touch_bi == -1 && loc_bi== -1){     // only do not touch any blocks
                         loc_bi = bi;
                     } else {
                         break;   // pre_blk-blk| |this blk. so not need to check following blks
                     }
                 } else if (new_blank.xl > blk.xh){
-                    // std::cout << "new blk behind this blk" << std::endl;
                     loc_bi = bi+1;
                 } else {
                     std::cout << "new_blank.xl: " << new_blank.xl << ", new_blank.xh: " << new_blank.xh 
@@ -97,31 +89,13 @@ void updateTouchedBlanksCPU(
             }
 
             if (remove_bi > -1){
-                // std::cout << "remove " << remove_bi << std::endl;
                 blanks.erase(blanks.begin()+remove_bi);
             }
             if (loc_bi > -1){
-                // std::cout << "insert " << loc_bi << std::endl;
                 blanks.insert(blanks.begin()+loc_bi, new_blank);
             }
         }
     }
-
-    // // check validation
-    // for (const auto& row_ : edge_touch_blanks) {
-    //     int xl = -1;
-    //     if (row_.size() > 0) {
-    //         for (const auto& blank_ : row_) {
-    //             std::cout << blank_.toString() << " ";
-    //             std::cout << " xl: " << xl << ", blank.xl: " << int(blank_.xl) 
-    //                 << ", (xl <= blank.xl): " << (xl <= int(blank_.xl));
-    //             // qplacerAssertMsg(xl <= blank.xl, "xl: %d, blank.xl: %d", xl, int(blank.xl));
-    //             // qplacerAssertMsg(blank.xl < blank.xh, "blank.xl: %g, blank.xh: %g", blank.xl, blank.xh);
-    //             xl = blank_.xh;
-    //         }
-    //         std::cout << std::endl;
-    //     }
-    // } 
 }
 
 
@@ -147,24 +121,19 @@ T checkTouchedEdgeLengthCPU(
         } else {
             for (unsigned int bi = 0; bi < blanks.size(); ++bi) {
                 const Blank<T>& blk = blanks.at(bi);
-                // std::cout << "blk.xl: " << blk.xl << ", blk.xh: " << blk.xh << std::endl;
                 if (blk.xl <= target_xl && (target_xl+width) <= blk.xh && offset_y !=0){
-                    // std::cout << "offset_y: " << offset_y << ", touched length: " << width << std::endl;
                     touched_edge_length += width;
                 }
                 if (offset_y ==0){
                     if (target_xl == blk.xh) {
-                        // std::cout << "front offset_y: " << offset_y << ", touched length: " << blk.yh - blk.yl << std::endl;
                        touched_edge_length += (blk.yh - blk.yl);
                     } else if (target_xl+width == blk.xl){
-                        // std::cout << "back offset_y: " << offset_y << ", touched length: " << blk.yh - blk.yl << std::endl;
                         touched_edge_length += (blk.yh - blk.yl);
                     }
                 }
             }
         }
     }
-    // std::cout << "touched_edge_length: " << touched_edge_length << std::endl;
     return touched_edge_length;
 }
 
@@ -187,11 +156,6 @@ void checkBlanksCPU(
             if (printable) std::cout << std::endl;
         }
     }
-    // std::cout << "edge_touch_blanks" << std::endl;
-    // for (const auto& row : edge_touch_blanks) {
-    //     for (const auto& blank : row) std::cout << blank.toString() << " ";
-    //     std::cout << std::endl;
-    // }
 }
 
 
@@ -238,21 +202,19 @@ void legalizeBinCPU(
             for (int edge_idx=0; edge_idx<node_in_group.size(); edge_idx++) {
                 total_length += node_in_group[edge_idx].size();         
                 edge_lengths.push_back(total_length);
-            }   // std::cout << "LOW -> HIGH | edge_lengths: ";
+            }   
         } else {
             for (int edge_idx=node_in_group.size()-1; edge_idx>=0; edge_idx--) {
                 total_length += node_in_group[edge_idx].size();         
                 edge_lengths.push_back(total_length);
-            }   // std::cout << "HIGH -> LOW | edge_lengths: ";
+            }   
         }
-        // for (const auto& len : edge_lengths) std::cout << len << " "; std::cout << std::endl;
 
         int counter = 0;
         // ci -> cell idx
         for (int ci = bin_cells.at(i).size()-1; ci >= 0; --ci) {
             // legalize a new edge, clean the edge_touch_blanks 
             if (total_bins-1 - ci == edge_lengths[edge_idx]) {     // ci is descending 
-                // std::cout << "Clean edge " << edge_idx << std::endl; 
                 for (auto& inner_vector : edge_touch_blanks) {
                     inner_vector.clear();
                 }
@@ -288,18 +250,11 @@ void legalizeBinCPU(
             T best_xl = -1; 
             T best_yl = -1; 
 
-            // std::cout << std::endl << "node_id: " << node_id << ", ci: " << ci 
-            //     << ", init_xl: " << init_xl << ", init_yl: " << init_yl 
-            //     << ", blank_bin_id_dist_y: " << blank_bin_id_dist_y << ", blank_initial_bin_id_y: " 
-            //     << blank_initial_bin_id_y << std::endl;
             checkBlanksCPU(bin_blanks, "check bin_blanks", false);
 
             if (!empty_edge_touch_blanks){
                 int blank_bin_id_dist_y = std::max(std::abs(touch_blanks_initial_y - blank_initial_bin_id_y), 
                     std::abs(touch_blanks_end_y - blank_initial_bin_id_y));
-
-                // std::cout << "touch_blanks_initial_y: " << touch_blanks_initial_y << ", touch_blanks_end_y: " << touch_blanks_end_y 
-                // << ", blank_bin_id_dist_y: " << blank_bin_id_dist_y << std::endl;
 
                 for (int bin_id_offset_y = 0; abs(bin_id_offset_y) <= blank_bin_id_dist_y; 
                 bin_id_offset_y = (bin_id_offset_y > 0)? -bin_id_offset_y : -(bin_id_offset_y-1)){
@@ -317,15 +272,9 @@ void legalizeBinCPU(
                     bool search_flag = true; 
                     T best_touched_edge_length = 0;
 
-                    // std::cout << empty_edge_touch_blanks << " | bin_id_offset_y: " << bin_id_offset_y 
-                    //     << " | edge_touch_blanks.at( " << blank_bin_id << " ).size() : " 
-                    //     << edge_touch_blanks.at(blank_bin_id).size() << std::endl;
-
                     // Iterate blanks in a row
                     for (unsigned int bi = 0; search_flag && bi < blanks.size(); ++bi) {
                         const Blank<T>& blank = blanks[bi];
-                        // std::cout << "Checking blank " << bi << " with xl, xh (" << blank.xl << ", " << blank.xh << ") "
-                        // << blank.toString() << std::endl;
 
                         // for multi-row height cells, check blanks in upper rows ind blanks with maximum intersection 
                         blank_index_offset[0] = bi; 
@@ -344,11 +293,9 @@ void legalizeBinCPU(
                                 target_xl = (intersect_blank.xh-width);
                             }
                             T cost = fabs(target_xl-init_xl)+fabs(target_yl-init_yl); 
-                            // std::cout << "target_xl: " << target_xl << ", target_yl: " << target_yl << " | Cost: " << cost << std::endl;
 
                             T touched_edge_length = checkTouchedEdgeLengthCPU(blank_num_bins_y, blank_bin_id, target_xl, width, edge_places);
-                            // std::cout << "touched_edge_length: " << touched_edge_length << std::endl;
-                            
+
                             // update best_touched_edge_length and best cost 
                             if (touched_edge_length > best_touched_edge_length){
                                 std::copy(blank_index_offset, blank_index_offset+num_node_rows, row_best_blank_bi); 
@@ -365,13 +312,6 @@ void legalizeBinCPU(
                                 }
                             }
 
-                            // update best cost 
-                            // if (cost < row_best_cost) {
-                            //     std::copy(blank_index_offset, blank_index_offset+num_node_rows, row_best_blank_bi); 
-                            //     row_best_cost = cost; 
-                            //     row_best_xl = target_xl; 
-                            //     row_best_yl = target_yl; 
-                            // }
                         }
                     }
 
@@ -386,14 +326,7 @@ void legalizeBinCPU(
                                 converted = true;
                             }
                         }
-                        // if (!converted){
-                        //     std::cout << "converted : " << converted << ", blank_bin_id_y: " << blank_bin_id_y 
-                        //     <<  ", row_best_xl: " << row_best_xl << ", row_best_xl+width: " << row_best_xl+width << std::endl;
-                        //     for (const auto& blank : blanks) std::cout << blank.toString() << " ";
-                        //     std::cout << std::endl;
-                        //     checkBlanksCPU(edge_touch_blanks, "check edge_touch_blanks", true);
-                        //     checkBlanksCPU(bin_blanks, "check bin_blanks", true);
-                        // }
+
                         qplacerAssert(converted);
 
                         best_blank_bin_id_y = blank_bin_id_y; 
@@ -431,14 +364,10 @@ void legalizeBinCPU(
                     T row_best_yl = -1; 
                     bool search_flag = true; 
 
-                    // std::cout << "bin_blanks.at( " << blank_bin_id << " ).size() : " << bin_blanks.at(blank_bin_id).size() << std::endl;
-                    
                     // Iterate blanks in a row
                     for (unsigned int bi = 0; search_flag && bi < bin_blanks.at(blank_bin_id).size(); ++bi) {
                         const Blank<T>& blank = blanks[bi];
 
-                        // std::cout << "Checking blank " << bi << " with xl, xh (" << blank.xl << ", " << blank.xh << ") " << blank.toString() << std::endl;
-                        
                         // for multi-row height cells, check blanks in upper rows ind blanks with maximum intersection 
                         blank_index_offset[0] = bi; 
                         std::fill(blank_index_offset+1, blank_index_offset+num_node_rows, -1); 
@@ -516,7 +445,6 @@ void legalizeBinCPU(
             // found blank  
             if (best_blank_bin_id_y >= 0) {
                 counter++;
-                // std::cout << "found: " << best_blank_bin_id_y << ", best_xl: " << best_xl << ", best_yl: " << best_yl << std::endl;
                 x[node_id] = best_xl; 
                 y[node_id] = best_yl; 
                 // update cell position and blank 
@@ -579,15 +507,12 @@ void legalizeBinCPU(
                 best_blank.xh = best_xl+width; 
                 best_blank.yl = best_blank_bin_id; 
                 best_blank.yh = best_blank_bin_id + row_height; 
-                // std::vector<Blank<T> >& blanks = bin_blanks.at(best_blank_bin_id);
-                // Blank<T> best_blank = blanks.at(best_blank_bi[row_offset]);
 
                 // add best blank to the edge_places
                 updateTouchedBlanksCPU(best_blank_bin_id_y, best_blank, edge_places, false);
                 checkBlanksCPU(edge_places, "check edge_places", false);
 
                 // remove best blank if it exist in edge_touch_blanks
-                // std::cout << "------" << std::endl;
                 updateTouchedBlanksCPU(best_blank_bin_id_y, best_blank, edge_touch_blanks, true);
 
                 // find touched blanks 0, +1, -1
@@ -597,9 +522,6 @@ void legalizeBinCPU(
                     if (blank_bin_id_y<blank_bin_id_yl || blank_bin_id_y+num_node_rows>blank_bin_id_yh) {continue;}
                     int blank_bin_id = bin_id_x*blank_num_bins_y+blank_bin_id_y; 
                     const std::vector<Blank<T> >& blanks = bin_blanks.at(blank_bin_id); // blanks in this bin 
-                    // std::cout << "id_offset_y: " << bin_id_offset_y << ", touched row: " << blank_bin_id_y
-                    //     << " | bin_blanks.at( " << blank_bin_id << " ).size() : " 
-                    //     << bin_blanks.at(blank_bin_id).size() << std::endl;
 
                     // Iterate blanks in a row
                     for (unsigned int bi = 0; bi < bin_blanks.at(blank_bin_id).size(); ++bi) {
@@ -645,13 +567,6 @@ void legalizeBinCPU(
                     }
                 }
 
-                // std::cout << "edge_touch_blanks" << std::endl;
-                // for (const auto& row : edge_touch_blanks) {
-                //     if (row.size() > 0) {
-                //         for (const auto& blank : row) std::cout << blank.toString() << " ";
-                //         std::cout << std::endl;
-                //     }
-                // }
                 checkBlanksCPU(edge_touch_blanks, "check edge_touch_blanks", false);
 
                 // check whether there are touched blanks 

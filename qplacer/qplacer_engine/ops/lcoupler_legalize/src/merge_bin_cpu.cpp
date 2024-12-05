@@ -1,4 +1,3 @@
-// #include "function_cpu.h"
 #include "lcoupler_legalize/src/function_cpu.h"
 
 QPLACER_BEGIN_NAMESPACE

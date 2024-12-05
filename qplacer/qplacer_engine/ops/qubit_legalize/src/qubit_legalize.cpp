@@ -248,14 +248,6 @@ QubitLegalizeStats<T> compute_displace(const LegalizationDB<T>& db,
   stats.max_displace = 0;
   stats.total_weighted_displace = 0;
   stats.max_weighted_displace = 0;
-  // stats.average_qubit_area = 0;
-
-  // for (auto node_id : qubits)
-  //{
-  //    stats.average_qubit_area += db.node_size_x[node_id] *
-  //    db.node_size_y[node_id];
-  //}
-  // stats.average_qubit_area /= qubits.size();
 
   for (auto node_id : qubits) {
     T displace = std::abs(db.init_x[node_id] - db.x[node_id]) +
@@ -379,7 +371,6 @@ void roughLegalizeLauncher(const LegalizationDB<T>& db,
                   }
                 }
 
-                // if (node_id2 == 1096674)
                 if (node_id1 == 1096131 || node_id1 == 1096158) {
                   qplacerPrint(kDEBUG,
                                   "%d (%g, %g, %g, %g) overlap %d (%g, %g, %g, "

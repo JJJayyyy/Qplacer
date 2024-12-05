@@ -1,8 +1,3 @@
-#
-# @file   PlaceDrawer.py
-# @brief  A python implementation of placement drawer
-#
-
 import sys
 import os
 import time

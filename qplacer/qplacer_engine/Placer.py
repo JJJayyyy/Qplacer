@@ -13,9 +13,9 @@ operator_module_path = f'{root_dir}/operators'
 if operator_module_path not in sys.path:
     sys.path.append(operator_module_path)
 
-import Params
-import PlaceDB
-import NonLinearPlace
+from Params import Params
+from PlaceDB import PlaceDB
+from NonLinearPlace import NonLinearPlace
 import operators.qplacement.configure as configure
 
 
@@ -31,13 +31,12 @@ def place(params):
     np.random.seed(params.random_seed)
 
     tt = time.time()
-    placedb = PlaceDB.PlaceDB()
+    placedb = PlaceDB()
     placedb(params)
     logging.info("reading database takes %.4f seconds" % (time.time() - tt))
 
-    # solve placement
     tt = time.time()
-    placer = NonLinearPlace.NonLinearPlace(params, placedb)
+    placer = NonLinearPlace(params, placedb)
     logging.info("placement initialization takes %.4f seconds" % (time.time() - tt))
     placer(params, placedb)
     logging.info("placement takes %.4f seconds" % (time.time() - tt))
@@ -49,7 +48,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO,
                         format='[%(levelname)-7s] %(name)s - %(message)s',
                         stream=sys.stdout)
-    params = Params.Params()
+    params = Params()
     params.printWelcome()
     if len(sys.argv) == 1 or '-h' in sys.argv[1:] or '--help' in sys.argv[1:]:
         params.printHelp()
@@ -64,4 +63,4 @@ if __name__ == "__main__":
     
     tt = time.time()
     place(params)
-    logging.info("placement takes %.3f seconds" % (time.time() - tt))
+    

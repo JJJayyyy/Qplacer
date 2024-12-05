@@ -259,26 +259,11 @@ class PlaceObj(nn.Module):
             result = self.wirelength + self.density_weight.dot(self.density)
         else:
             result = torch.add(self.wirelength, self.density, alpha=(self.density_factor * self.density_weight).item())
-   
-        # print(f"self.wirelength: {self.wirelength}")
-        # print('density_weight: {}, density: {}, alpha * density: {}'.format(
-        #     self.density_weight,
-        #     self.density,
-        #     self.density*(self.density_factor * self.density_weight).item()
-        #     ))
-        # print(f"result : {result:.4f}")
+
         if self.params.frequency_assign:
             self.frequency_force = self.op_collections.frequency_repulsion_op(pos)
             result = torch.add(result, self.frequency_force, 
                                alpha=(self.density_factor * self.frequency_repulsion_weight).item())
-            # print('f_force_weight: {}, f_force: {}, alpha * f_force: {}'.format(
-            # self.frequency_repulsion_weight,
-            # self.frequency_force,
-            # self.frequency_force * (self.density_factor * self.frequency_repulsion_weight).item()
-            # ))
-            # print(f"freq result : {result:.4f}")
-        # assert 0
-        return result
 
         return result
 
@@ -756,13 +741,10 @@ class PlaceObj(nn.Module):
         - placedb: placement database
         - data_collections: a collection of data and variables required for constructing ops
         """
-        node_size_x = torch.tensor(data_collections.node_size_x, 
-                                   device=data_collections.pos[0].device, 
-                                   dtype=torch.float32)
-        node_size_y = torch.tensor(data_collections.node_size_y, 
-                                   device=data_collections.pos[0].device, 
-                                   dtype=torch.float32)
+        node_size_x = data_collections.node_size_x.clone().detach()
+        node_size_y = data_collections.node_size_y.clone().detach()
 
+        # print(self.params.num_qubit)
         params.potential_collision_map = {int(key): value for key, value in params.potential_collision_map.items()}
         return frequency_replusion.FrequencyRepulsion(
             node_size_x=node_size_x,
@@ -774,5 +756,5 @@ class PlaceObj(nn.Module):
             qubit_dist_threhold_y=params.qubit_dist_threhold,
             coupler_dist_threhold_x=params.coupler_dist_threhold,
             coupler_dist_threhold_y=params.coupler_dist_threhold,
-            placedb=placedb, 
+            placedb=placedb,
             )

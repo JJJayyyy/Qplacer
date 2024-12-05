@@ -12,6 +12,7 @@ class Params:
         @brief initialization
         """
         filename = os.path.join(os.path.dirname(__file__), 'params.json')
+        print(filename)
         self.__dict__ = {}
         params_dict = {}
         with open(filename, "r") as f:
@@ -29,7 +30,7 @@ class Params:
         """
         content = """\
 ========================================================
-                       Qplacer
+                       QPlacer
 ========================================================"""
         print(content)
 

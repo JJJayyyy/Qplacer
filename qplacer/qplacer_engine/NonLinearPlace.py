@@ -7,8 +7,8 @@ import copy
 import inspect
 
 import BasicPlace
-import PlaceObj
-import NesterovAcceleratedGradientOptimizer
+from PlaceObj import PlaceObj
+from NesterovAcceleratedGradientOptimizer import NesterovAcceleratedGradientOptimizer
 import EvalMetrics
 
 
@@ -56,7 +56,7 @@ class NonLinearPlace(BasicPlace.BasicPlace):
                 # construct model and optimizer
                 density_weight = 0.0
                 # construct placement model
-                model = PlaceObj.PlaceObj(
+                model = PlaceObj(
                     density_weight,
                     params,
                     placedb,
@@ -76,7 +76,7 @@ class NonLinearPlace(BasicPlace.BasicPlace):
                 elif optimizer_name.lower() == "sgd_nesterov":
                     optimizer = torch.optim.SGD(self.parameters(), lr=0, momentum=0.9, nesterov=True)
                 elif optimizer_name.lower() == "nesterov":
-                    optimizer = NesterovAcceleratedGradientOptimizer.NesterovAcceleratedGradientOptimizer(
+                    optimizer = NesterovAcceleratedGradientOptimizer(
                         self.parameters(),
                         lr=0,
                         obj_and_grad_fn=model.obj_and_grad_fn,
@@ -465,11 +465,6 @@ class NonLinearPlace(BasicPlace.BasicPlace):
                             for param_group in optimizer.param_groups:
                                 param_group["lr"] *= global_place_params["learning_rate_decay"]
 
-                # in case of divergence, use the best metric
-                # last_metric = all_metrics[-1][-1][-1]
-                # if (last_metric.overflow[-1] > max(params.stop_overflow, best_metric[0].overflow[-1])
-                #     and last_metric.hpwl > best_metric[0].hpwl):
-                #     all_metrics.append([best_metric])
                 logging.info("optimizer %s takes %.3f seconds" % (optimizer_name, time.time() - tt))
         else:
             cur_metric = EvalMetrics.EvalMetrics(iteration)

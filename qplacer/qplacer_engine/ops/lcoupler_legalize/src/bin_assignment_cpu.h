@@ -1,9 +1,3 @@
-/**
- * @file   bin_assignment.h
- * @author Yibo Lin
- * @date   Oct 2018
- */
-
 #ifndef QPLACER_BIN_ASSIGNMENT_H
 #define QPLACER_BIN_ASSIGNMENT_H
 

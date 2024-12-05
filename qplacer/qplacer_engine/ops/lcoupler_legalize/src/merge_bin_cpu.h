@@ -47,10 +47,6 @@ void mergeBinBlanksCPU(
 
     std::vector<Blank<T> >& dst_bin_blank = dst_bin_blanks.at(i);
 
-    // qplacerPrint(kDEBUG, "dst_bin_blanks[%d] (%d, %d) found src_bin_blanks
-    // (%d, %d) (%d)\n", i, dst_bin_id_x, dst_bin_id_y, src_bin_id_x_bgn,
-    // src_bin_id_x_end, dst_bin_id_y);
-
     for (int ix = src_bin_id_x_bgn; ix < src_bin_id_x_end; ++ix) {
       // for (int iy = src_bin_id_y_bgn; iy < src_bin_id_y_end; ++iy)
       int iy = dst_bin_id_y;  // same as src_bin_id_y
@@ -70,10 +66,7 @@ void mergeBinBlanksCPU(
             offset = 1;
           }
         }
-        // CVector::push_back(dst_bin_blanks, i,
-        //        src_bin_blank+offset,
-        //        src_bin_blank+src_bin_blanks.sizes[src_bin_id]
-        //        );
+
         for (unsigned int k = offset; k < src_bin_blank.size(); ++k) {
           const Blank<T>& blank = src_bin_blank.at(k);
           // prune small blanks

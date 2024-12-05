@@ -2,7 +2,6 @@
 #define QPLACER_LEGALITY_CHECK_H
 
 #include <algorithm>
-// #include <cassert>
 #include <iostream>
 #include <vector>
 #include "utility/src/utils.h"

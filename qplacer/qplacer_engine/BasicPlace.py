@@ -15,9 +15,6 @@ import operators.dreamplace.ops.move_boundary.move_boundary as move_boundary
 import operators.dreamplace.ops.hpwl.hpwl as hpwl
 import operators.dreamplace.ops.pin_pos.pin_pos as pin_pos
 import operators.dreamplace.ops.pin_weight_sum.pin_weight_sum as pws
-import operators.dreamplace.ops.abacus_legalize.abacus_legalize as abacus_legalize
-import operators.dreamplace.ops.macro_legalize.macro_legalize as macro_legalize
-import operators.dreamplace.ops.greedy_legalize.greedy_legalize as greedy_legalize
 
 import operators.qplacement.ops.legality_check.legality_check as legality_check
 import operators.qplacement.ops.lcoupler_legalize.lcoupler_legalize as linear_coupler_legalize
@@ -48,8 +45,6 @@ class PlaceDataCollection(object):
             self.node_size_x = torch.from_numpy(placedb.node_size_x).to(device)
             self.node_size_y = torch.from_numpy(placedb.node_size_y).to(device)
             # original node size for legalization, since they will be adjusted in global placement
-            #     self.original_node_size_x = self.node_size_x.clone()
-            #     self.original_node_size_y = self.node_size_y.clone()
 
             self.pin_offset_x = torch.tensor(placedb.pin_offset_x,
                                              dtype=self.pos[0].dtype,
@@ -58,8 +53,6 @@ class PlaceDataCollection(object):
                                              dtype=self.pos[0].dtype,
                                              device=device)
             # original pin offset for legalization, since they will be adjusted in global placement
-            #     self.original_pin_offset_x = self.pin_offset_x.clone()
-            #     self.original_pin_offset_y = self.pin_offset_y.clone()
 
             self.target_density = torch.empty(1, dtype=self.pos[0].dtype, device=device)
             self.target_density.data.fill_(params.target_density)
@@ -135,10 +128,7 @@ class PlaceDataCollection(object):
             movable_size_x = self.node_size_x[:placedb.num_movable_nodes]
             _, self.sorted_node_map = torch.sort(movable_size_x)
             self.sorted_node_map = self.sorted_node_map.to(torch.int32)
-            # logging.debug(self.node_size_x[placedb.num_movable_nodes//2 :placedb.num_movable_nodes//2+20])
-            # logging.debug(self.sorted_node_map[placedb.num_movable_nodes//2 :placedb.num_movable_nodes//2+20])
-            # logging.debug(self.node_size_x[self.sorted_node_map[0: 10].long()])
-            # logging.debug(self.node_size_x[self.sorted_node_map[-10:].long()])
+
 
     def bin_center_x_padded(self, placedb, padding, num_bins_x):
         """
@@ -336,15 +326,7 @@ class BasicPlace(nn.Module):
             self.op_collections.legalize_op, self.op_collections.individual_legalize_op = self.build_multi_fence_region_legalization(
             params, placedb, self.data_collections, self.device)
         else:
-            if hasattr(params, 'qplacer_legalize_flag'):
-                if params.qplacer_legalize_flag:
-                    self.op_collections.legalize_op = self.build_qplacer_legalization(
-                    params, placedb, self.data_collections, self.device)
-                else:
-                    self.op_collections.legalize_op = self.build_legalization(
-                    params, placedb, self.data_collections, self.device)
-            else:
-                self.op_collections.legalize_op = self.build_qplacer_legalization(
+            self.op_collections.legalize_op = self.build_qplacer_legalization(
                     params, placedb, self.data_collections, self.device)
         # draw placement
         self.op_collections.draw_place_op = self.build_draw_placement(params, placedb)
@@ -573,94 +555,6 @@ class BasicPlace(nn.Module):
         return build_legalization_op
     
     
-
-    def build_legalization(self, params, placedb, data_collections, device):
-        """
-        @brief legalization
-        @param params parameters
-        @param placedb placement database
-        @param data_collections a collection of all data and variables required for constructing the ops
-        @param device cpu or cuda
-        """
-        # for movable macro legalization
-        # the number of bins control the search granularity
-        ml = macro_legalize.MacroLegalize(
-            node_size_x=data_collections.node_size_x,
-            node_size_y=data_collections.node_size_y,
-            node_weights=data_collections.num_pins_in_nodes,
-            flat_region_boxes=data_collections.flat_region_boxes,
-            flat_region_boxes_start=data_collections.flat_region_boxes_start,
-            node2fence_region_map=data_collections.node2fence_region_map,
-            xl=placedb.xl,
-            yl=placedb.yl,
-            xh=placedb.xh,
-            yh=placedb.yh,
-            site_width=placedb.site_width,
-            row_height=placedb.row_height,
-            num_bins_x=placedb.num_bins_x,
-            num_bins_y=placedb.num_bins_y,
-            num_movable_nodes=placedb.num_movable_nodes,
-            num_terminal_NIs=placedb.num_terminal_NIs,
-            num_filler_nodes=placedb.num_filler_nodes)
-        # for standard cell legalization
-        legalize_alg = greedy_legalize.GreedyLegalize
-        gl = legalize_alg(
-            node_size_x=data_collections.node_size_x,
-            node_size_y=data_collections.node_size_y,
-            node_weights=data_collections.num_pins_in_nodes,
-            flat_region_boxes=data_collections.flat_region_boxes,
-            flat_region_boxes_start=data_collections.flat_region_boxes_start,
-            node2fence_region_map=data_collections.node2fence_region_map,
-            xl=placedb.xl,
-            yl=placedb.yl,
-            xh=placedb.xh,
-            yh=placedb.yh,
-            site_width=placedb.site_width,
-            row_height=placedb.row_height,
-            num_bins_x=1,
-            num_bins_y=64,
-            #num_bins_x=64, num_bins_y=64,
-            num_movable_nodes=placedb.num_movable_nodes,
-            num_terminal_NIs=placedb.num_terminal_NIs,
-            num_filler_nodes=placedb.num_filler_nodes)
-        # for standard cell legalization
-        al = abacus_legalize.AbacusLegalize(
-            node_size_x=data_collections.node_size_x,
-            node_size_y=data_collections.node_size_y,
-            node_weights=data_collections.num_pins_in_nodes,
-            flat_region_boxes=data_collections.flat_region_boxes,
-            flat_region_boxes_start=data_collections.flat_region_boxes_start,
-            node2fence_region_map=data_collections.node2fence_region_map,
-            xl=placedb.xl,
-            yl=placedb.yl,
-            xh=placedb.xh,
-            yh=placedb.yh,
-            site_width=placedb.site_width,
-            row_height=placedb.row_height,
-            num_bins_x=1,
-            num_bins_y=64,
-            num_movable_nodes=placedb.num_movable_nodes,
-            num_terminal_NIs=placedb.num_terminal_NIs,
-            num_filler_nodes=placedb.num_filler_nodes)
-
-        def build_legalization_op(pos):
-            logging.info("Start legalization")
-            pos1 = ml(pos, pos)
-            pos2 = gl(pos1, pos1)
-            legal = self.op_collections.legality_check_op(pos2)
-            if not legal:
-                logging.error("legality check failed in greedy legalization, " \
-                    "return illegal results after greedy legalization.")
-                return pos2
-            pos3 = al(pos1, pos2)
-            legal = self.op_collections.legality_check_op(pos3)
-            if not legal:
-                logging.error("legality check failed in abacus legalization, " \
-                    "return legal results after greedy legalization.")
-                return pos2
-            return pos3
-
-        return build_legalization_op
     
     def build_multi_fence_region_legalization(self, params, placedb, data_collections, device):
         legal_ops = [self.build_fence_region_legalization(region_id, params, placedb, data_collections, device) for region_id in range(len(placedb.regions)+1)]
@@ -687,6 +581,7 @@ class BasicPlace(nn.Module):
             return pos
 
         return build_legalization_op, build_individual_legalization_ops
+
 
     def build_fence_region_legalization(self, region_id, params, placedb, data_collections, device):
         ### reconstruct node size

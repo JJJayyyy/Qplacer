@@ -143,15 +143,8 @@ void longestPathLegalizeLauncher(LegalizationDB<T> db, const std::vector<int>& q
         T xh2 = xl2 + width2;
         T yh2 = yl2 + height2;
 
-        
-
         T dx = std::max(xl1, xl2) - std::min(xh1, xh2);
         T dy = std::max(yl1, yl2) - std::min(yh1, yh2);
-
-        // T min_spacing = db.site_width * 2;
-        // T dx = std::max(xl1, xl2) - std::min(xh1 + min_spacing, xh2 + min_spacing);
-        // T dy = std::max(yl1, yl2) - std::min(yh1 + min_spacing, yh2 + min_spacing);
-        // std::cout << "dx: " << dx << ", min_spacing: " << min_spacing << std::endl;
 
         if (dx < 0 && dy < 0) // case I: overlap
         {
@@ -782,13 +775,11 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
             {
                 qplacerAssertMsg(model_hcg.addConstraint(var1 - var2 <= -(width1 + min_spacing)), 
                 "failed to add HCG constraint");    /// minimum spacing
-                // qplacerAssertMsg(model_hcg.addConstraint(var1 - var2 <= -width1), "failed to add HCG constraint");
             }
             else 
             {
                 qplacerAssertMsg(model_hcg.addConstraint(var2 - var1 <= -(width2 + min_spacing)), 
                 "failed to add HCG constraint");    /// minimum spacing
-                // qplacerAssertMsg(model_hcg.addConstraint(var2 - var1 <= -width2), "failed to add HCG constraint");
             }
         }
         else // j is fixed qubit 
@@ -796,12 +787,10 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
             if (xl1 < xl2)
             {
                 model_hcg.updateVariableUpperBound(var1, floor(xl2 - width1));
-                //qplacerPrint(kDEBUG, "HCG: %s <= x%d (%g) - %g\n", model_hcg.variableName(var1).c_str(), j, xl2, width1);
             }
             else 
             {
                 model_hcg.updateVariableLowerBound(var1, ceil(xl2 + width2));
-                //qplacerPrint(kDEBUG, "HCG: %s >= x%d (%g) + %g\n", model_hcg.variableName(var1).c_str(), j, xl2, width2);
             }
         }
     };
@@ -814,15 +803,11 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
             {
                 qplacerAssertMsg(model_vcg.addConstraint(var1 - var2 <= -(height1 + min_spacing)), 
                 "failed to add VCG constraint");
-                // qplacerAssertMsg(model_vcg.addConstraint(var1 - var2 <= -height1), 
-                // "failed to add VCG constraint");
             }
             else 
             {
                 qplacerAssertMsg(model_vcg.addConstraint(var2 - var1 <= -(height2 + min_spacing)), 
                 "failed to add VCG constraint");
-                // qplacerAssertMsg(model_vcg.addConstraint(var2 - var1 <= -height2), 
-                // "failed to add VCG constraint");
             }
         }
         else // j is fixed qubit 
@@ -830,12 +815,10 @@ void lpLegalizeLauncher(LegalizationDB<T> db,
             if (yl1 < yl2)
             {
                 model_vcg.updateVariableUpperBound(var1, floor(yl2 - height1)); 
-                //qplacerPrint(kDEBUG, "VCG: %s <= x%d (%g) - %g\n", model_vcg.variableName(var1).c_str(), j, yl2, height1);
             }
             else 
             {
                 model_vcg.updateVariableLowerBound(var1, ceil(yl2 + height2));
-                //qplacerPrint(kDEBUG, "VCG: %s >= x%d (%g) + %g\n", model_vcg.variableName(var1).c_str(), j, yl2, height2);
             }
         }
     };
